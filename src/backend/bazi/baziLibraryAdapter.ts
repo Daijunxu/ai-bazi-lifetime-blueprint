@@ -66,7 +66,8 @@ function convertBranch(branch: string): EarthlyBranch {
  * 使用 bazi-calculator-by-alvamind 库计算四柱
  * 这个库使用准确的日期映射表，正确处理节气和日柱计算
  * 
- * 注意：由于库是 TypeScript 源代码，我们需要使用特殊方法加载
+ * 注意：在 serverless 环境中（如 Vercel），文件系统是只读的，
+ * 因此我们直接尝试 import 库，如果失败则抛出错误让调用者使用 fallback
  */
 export async function calculateFourPillarsWithLibrary(
   year: number,
@@ -75,61 +76,31 @@ export async function calculateFourPillarsWithLibrary(
   hour: number,
   minute: number = 0
 ): Promise<FourPillars> {
-  // 使用子进程调用 tsx 来运行 TypeScript 文件（已验证可行）
-  // 因为 Next.js 无法直接处理 node_modules 中的 TypeScript 文件
-  const { execSync } = require("child_process");
-  const path = require("path");
-  const fs = require("fs");
-  
-  // 创建临时脚本文件
-  const tempScript = `
-import { BaziCalculator } from 'bazi-calculator-by-alvamind/src/bazi-calculator';
-const calc = new BaziCalculator(${year}, ${month}, ${day}, ${hour});
-const pillars = calc.calculatePillars();
-console.log(JSON.stringify(pillars));
-`;
-  
-  const tempPath = path.join(process.cwd(), ".temp-bazi-calc.ts");
   let pillars: any;
   
   try {
-    fs.writeFileSync(tempPath, tempScript);
+    // 尝试直接 import 库（在构建时应该已经编译）
+    // 使用动态 import 以避免构建时错误
+    const baziModule = await import("bazi-calculator-by-alvamind/src/bazi-calculator");
+    const BaziCalculator = baziModule.BaziCalculator || (baziModule as any).default?.BaziCalculator;
     
-    // 使用 tsx 运行 TypeScript 文件
-    const result = execSync(`npx tsx ${tempPath}`, {
-      encoding: "utf8",
-      cwd: process.cwd(),
-      timeout: 10000, // 10秒超时
-      stdio: ["pipe", "pipe", "pipe"], // 捕获所有输出
-    });
-    
-    // 解析 JSON 结果
-    const output = result.trim();
-    // 可能有多行输出，取最后一行（JSON）
-    const jsonLine = output.split("\n").filter((line: string) => 
-      line.trim().startsWith("{")
-    ).pop() || output;
-    
-    pillars = JSON.parse(jsonLine);
-  } catch (e) {
-    // 清理临时文件
-    if (fs.existsSync(tempPath)) {
-      fs.unlinkSync(tempPath);
+    if (!BaziCalculator) {
+      throw new Error("无法找到 BaziCalculator 类");
     }
+    
+    const calc = new BaziCalculator(year, month, day, hour);
+    pillars = calc.calculatePillars();
+    
+    if (!pillars) {
+      throw new Error("库返回空结果");
+    }
+  } catch (e) {
+    // 在 serverless 环境中，如果直接 import 失败，抛出错误让调用者使用 fallback
     throw new Error(
       `无法使用 bazi-calculator-by-alvamind 库计算四柱。` +
       `错误: ${e instanceof Error ? e.message : String(e)}。` +
-      `请确保已安装 tsx: npm install tsx --save-dev`
+      `将使用简化算法作为后备方案。`
     );
-  } finally {
-    // 清理临时文件
-    if (fs.existsSync(tempPath)) {
-      try {
-        fs.unlinkSync(tempPath);
-      } catch (e) {
-        // 忽略清理错误
-      }
-    }
   }
   
   if (!pillars) {
