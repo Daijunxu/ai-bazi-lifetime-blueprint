@@ -80,15 +80,19 @@ export async function calculateFourPillarsWithLibrary(
   
   try {
     // 尝试直接 import 库（在构建时应该已经编译）
-    // 使用动态 import 以避免构建时错误
+    // 使用动态 import 和类型断言以避免构建时的类型错误
+    // @ts-ignore - 忽略第三方库的类型错误
     const baziModule = await import("bazi-calculator-by-alvamind/src/bazi-calculator");
+    // @ts-ignore
     const BaziCalculator = baziModule.BaziCalculator || (baziModule as any).default?.BaziCalculator;
     
     if (!BaziCalculator) {
       throw new Error("无法找到 BaziCalculator 类");
     }
     
+    // @ts-ignore
     const calc = new BaziCalculator(year, month, day, hour);
+    // @ts-ignore
     pillars = calc.calculatePillars();
     
     if (!pillars) {
