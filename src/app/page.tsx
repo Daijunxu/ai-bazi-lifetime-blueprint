@@ -5,13 +5,13 @@
  * 用户输入出生信息，生成八字报告
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BirthForm, type BirthFormData } from "@/components/forms/BirthForm";
 import { ProfileHistory } from "@/components/ProfileHistory";
 import { saveProfile, getProfileById, updateProfile, type UserProfile } from "@/lib/storage/profileStorage";
 
-export default function HomePage() {
+function HomePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editProfileId = searchParams.get("edit");
@@ -262,10 +262,26 @@ export default function HomePage() {
         </div>
 
         {/* 说明 */}
-        <div className="mt-8 text-center text-sm text-gray-500">
+        <div style={{ marginTop: "32px", textAlign: "center", fontSize: "14px", color: "#6b7280" }}>
           <p>您的数据仅存储在本地浏览器中，不会上传到服务器</p>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ width: "40px", height: "40px", border: "4px solid #f3f3f3", borderTop: "4px solid #87CEEB", borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto" }} />
+          <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+          <p style={{ marginTop: "16px", color: "#666" }}>加载中...</p>
+        </div>
+      </div>
+    }>
+      <HomePageContent />
+    </Suspense>
   );
 }

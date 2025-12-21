@@ -6,6 +6,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { InMemoryGeoClient } from "@/backend/geo/geoClient";
 
+// 标记为动态路由，因为使用了 searchParams
+export const dynamic = 'force-dynamic';
+
 /**
  * 处理城市搜索请求
  */

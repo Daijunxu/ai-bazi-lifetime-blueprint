@@ -5,7 +5,7 @@
  * 显示完整的八字报告，包含 Sticky Header、Technical Card 和报告内容
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 // 顶部直接使用详细八字表，不再单独显示四柱 Header
 import { FourPillarsTable } from "@/components/report/FourPillarsTable";
@@ -18,7 +18,7 @@ import type { AnalystVerdictJSON } from "@/types/analyst";
 import type { BasicReport } from "@/types/report";
 import { LoadingAnimation } from "@/components/LoadingAnimation";
 
-export default function ReportPage() {
+function ReportPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const profileId = searchParams.get("profileId");
@@ -261,6 +261,45 @@ export default function ReportPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ReportPage() {
+  return (
+    <Suspense fallback={
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: "#f9fafb",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <LoadingAnimation width={200} height={200} />
+          <p
+            style={{
+              marginTop: "24px",
+              fontSize: "18px",
+              color: "#666",
+              fontWeight: 500,
+            }}
+          >
+            加载中...
+          </p>
+        </div>
+      </div>
+    }>
+      <ReportPageContent />
+    </Suspense>
   );
 }
 
