@@ -1,0 +1,34 @@
+{
+  "name": "ai-bazi-lifetime-blueprint",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "bazi-calculator-by-alvamind": "^1.0.2",
+    "cities.json": "^1.1.50",
+    "countries-states-cities": "^1.0.6",
+    "date-fns-tz": "^3.2.0",
+    "next": "14.2.5",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "timezone-soft": "^1.5.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "14.2.5",
+    "tsx": "^4.21.0",
+    "typescript": "^5.5.4",
+    "vitest": "^1.6.0"
+  }
+}

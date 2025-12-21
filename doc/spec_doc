@@ -1,0 +1,166 @@
+Product Specification: AI Bazi Lifetime Blueprint (AI 八字命理)
+1. Executive Summary
+Project Name: AI Bazi Lifetime Blueprint Platform: Web Application (Responsive: Mobile First & Desktop) Target Audience: Bazi (Chinese Metaphysics) enthusiasts and learners. Primary App Language: Simplified Chinese (zh-CN). Core Concept: A "Hybrid Multi-Agent" system that combines precise algorithmic Bazi calculations with high-quality AI interpretation. The goal is to provide a comprehensive, transparent ("Glass Box"), and constructive lifetime reading.
+
+2. Technical Architecture
+The system utilizes a 3-Layer Architecture to decouple mathematical accuracy from creative interpretation.
+
+Layer 1: The Calculation Engine (Deterministic)
+Role: Hard logic. No AI hallucinations permitted here.
+
+Technology: Python (lunar-python) or Node.js (bazi-js).
+
+Key Feature: True Solar Time (真太阳时):
+
+The app must integrate a Geolocation API (e.g., Google Places or Mapbox).
+
+Input: User provides "Birth City".
+
+Process: Convert City → Longitude → Adjust Clock Time to Solar Time → Calculate Chart.
+
+Outputs: A structured JSON object containing:
+
+Four Pillars (Year, Month, Day, Hour).
+
+Hidden Stems (Cang Gan).
+
+10-Year Luck Pillars (Da Yun).
+
+Interaction Matrix (Clashes, Combinations, Harms).
+
+Star Gods (Shen Sha).
+
+Layer 2: The "Analyst" Agent (AI Logic)
+Role: The "Brain." It interprets the JSON data to make technical decisions before writing begins.
+
+Model: High-reasoning LLM (e.g., GPT-4o, Claude 3.5 Sonnet).
+
+Task:
+
+Analyze Day Master Strength (Strong/Weak/Follow).
+
+Determine Chart Structure (Ge Ju).
+
+Critical: Identify the Useful God (Yong Shen) and Unfavorable Elements.
+
+Output: A "Verdict" JSON (e.g., {"structure": "Weak Wood", "yong_shen": "Water", "verdict_reasoning": "..."}).
+
+Layer 3: The "Writer" Agent (AI Creative)
+Role: The "Voice." Generates the final user-facing text in Simplified Chinese.
+
+Inputs: Calculation JSON + Analyst Verdict.
+
+Tone: Constructive, Coaching, Educational.
+
+Constraint: Do not use fatalistic language. Frame negative indicators (e.g., Clashes) as challenges to manage.
+
+Style: Educational/Glass Box. Explicitly reference Bazi terms (e.g., "Because you have a Seven Killings star...") to satisfy enthusiasts.
+
+3. User Experience (UX) & UI Requirements
+3.1 Onboarding & Data Entry
+Input Fields: Name (Optional), Gender, Birth Date, Birth Time, Birth City (Auto-complete).
+
+Data Persistence:
+
+Mechanism: Browser LocalStorage.
+
+Logic: Store the last 5 user profiles locally. No login/signup required for the Basic Report.
+
+Profile Management: A simple "History" dropdown to switch between saved charts.
+
+3.2 The Report Interface
+Sticky Header (Crucial Feature):
+
+Desktop: The full Four Pillars chart + Current Luck Pillar must remain pinned to the top of the viewport while scrolling.
+
+Mobile: A condensed bar showing only the Day Master and Current Luck Pillar is pinned. Tapping it expands the full chart overlay.
+
+The "Technical Card" (Transparency):
+
+Before the narrative text, display a dashboard card showing the Analyst Agent's technical conclusions:
+
+Chart Structure (e.g., 伤官格)
+
+Body Strength (e.g., 身弱)
+
+Useful God (e.g., 喜用神: 水)
+
+Purpose: Builds trust with enthusiast users by "showing the work."
+
+3.3 Report Content Structure
+A. Default Report (Free/Basic)
+
+Language: Simplified Chinese.
+
+Sections:
+
+Core Personality (Day Master Analysis).
+
+Career & Wealth Potential.
+
+Relationship & Marriage.
+
+Health Vulnerabilities.
+
+Current 10-Year Luck Cycle (Da Yun).
+
+Current Year Analysis (Liu Nian): Deep dive into the current calendar year (e.g., 2025).
+
+B. Extended Report (Paid/Monetized)
+
+Access: Gated (Stripe/Payment Integration). Supports One-time purchase and Subscription.
+
+UI - The "Rich Timeline":
+
+A scrollable list of year cards (Past & Future).
+
+Scanner Tags: Each card displays algorithmic tags instantly (pre-calculated by Layer 1, not AI).
+
+Examples: ⚠️ Conflict (冲), ❤️ Romance (桃花), 💰 Wealth (财库).
+
+Lazy Loading: The text analysis for these years is not generated upfront.
+
+Interaction: User clicks a year card -> Loading Spinner -> API calls Writer Agent -> Text appears.
+
+4. API & Data Flow Specifications
+Endpoint: /api/v1/report/init
+Input: User Birth Data.
+
+Process:
+
+Calculate Solar Time.
+
+Generate Chart JSON (Layer 1).
+
+Call Analyst Agent (Layer 2).
+
+Call Writer Agent (Layer 3) for Basic Sections.
+
+Output: Chart Data + Basic Report Markdown.
+
+Endpoint: /api/v1/report/year-detail
+Input: Chart JSON + Specific Year (e.g., 2027).
+
+Process: Call Writer Agent (Layer 3) focusing only on that specific year's interaction.
+
+Output: Markdown string for that year.
+
+5. Error Handling & Safety
+Geocoding Failures: If the API cannot find the city coordinates, fallback to user-input time but display a warning: "True Solar Time not applied (Location unknown)."
+
+AI Hallucinations:
+
+Prevention: The "Writer Agent" must be prompted strictly to use the data provided by the "Analyst Agent" and never recalculate the chart itself.
+
+Content Safety:
+
+System Prompt must include a "Guardrail": Refuse to give specific medical diagnoses, death dates, or financial investment advice.
+
+6. Testing Plan
+Algorithm Calibration: Compare "Layer 1" outputs against an industry-standard almanac (Wan Nian Li) for 20 random dates to ensure Solar Time and Solar Term (Jie Qi) precision.
+
+Mobile Responsiveness: Verify the "Sticky Header" behavior on small screens (iPhone SE/Mini) to ensure it doesn't obscure reading space.
+
+Lazy Load Latency: Test the "Extended Report" click-to-load time. Target latency < 5 seconds per year generation.
+
+Tone Check: Review 10 reports of "bad luck" charts to ensure the AI maintains a constructive, coaching tone and does not generate depressing content.
