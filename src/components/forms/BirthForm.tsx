@@ -242,7 +242,7 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
         >
           出生时间
         </label>
-        <div style={{ flex: 1, position: "relative" }}>
+        <div style={{ flex: 1, position: "relative", minWidth: 0 }}>
           <input
             type="date"
             id="birthDate"
@@ -252,7 +252,8 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
             max={new Date().toISOString().split("T")[0]}
             style={{
               width: "100%",
-              padding: "10px 32px 10px 12px",
+              maxWidth: "100%",
+              padding: "10px 12px",
               backgroundColor: "#f5f5f5",
               border: "none",
               borderRadius: "8px",
@@ -260,6 +261,7 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
               outline: "none",
               color: formData.birthDate ? "#333" : "#999",
               marginBottom: "8px",
+              boxSizing: "border-box",
             }}
           />
           <input
@@ -270,28 +272,17 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
             required
             style={{
               width: "100%",
-              padding: "10px 32px 10px 12px",
+              maxWidth: "100%",
+              padding: "10px 12px",
               backgroundColor: "#f5f5f5",
               border: "none",
               borderRadius: "8px",
               fontSize: "15px",
               outline: "none",
               color: formData.birthTime ? "#333" : "#999",
+              boxSizing: "border-box",
             }}
           />
-          <span
-            style={{
-              position: "absolute",
-              right: "12px",
-              top: "50%",
-              transform: "translateY(-50%)",
-              color: "#999",
-              fontSize: "14px",
-              pointerEvents: "none",
-            }}
-          >
-            &gt;
-          </span>
         </div>
       </div>
 
@@ -316,7 +307,7 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
         >
           出生地点
         </label>
-        <div style={{ flex: 1, position: "relative" }}>
+        <div style={{ flex: 1, position: "relative", minWidth: 0 }}>
           <input
             type="text"
             id="birthCity"
@@ -343,29 +334,18 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
             required
             style={{
               width: "100%",
-              padding: "10px 32px 10px 12px",
+              maxWidth: "100%",
+              padding: "10px 12px",
               backgroundColor: "#f5f5f5",
               border: "none",
               borderRadius: "8px",
               fontSize: "15px",
               outline: "none",
               color: formData.birthCity ? "#333" : "#999",
+              boxSizing: "border-box",
             }}
             placeholder="请选择"
           />
-          <span
-            style={{
-              position: "absolute",
-              right: "12px",
-              top: "50%",
-              transform: "translateY(-50%)",
-              color: "#999",
-              fontSize: "14px",
-              pointerEvents: "none",
-            }}
-          >
-            &gt;
-          </span>
           {showSuggestions && citySuggestions.length > 0 && (
             <ul
               ref={suggestionsRef}
@@ -373,6 +353,7 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
                 position: "absolute",
                 zIndex: 10,
                 width: "100%",
+                maxWidth: "100%",
                 marginTop: "4px",
                 backgroundColor: "#ffffff",
                 border: "1px solid #e0e0e0",
@@ -382,6 +363,7 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
                 overflow: "auto",
                 listStyle: "none",
                 padding: 0,
+                boxSizing: "border-box",
               }}
               onMouseDown={(e) => {
                 // 阻止 onBlur 触发
