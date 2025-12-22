@@ -158,6 +158,8 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
             flex: 1,
             minWidth: 0,
             maxWidth: "100%",
+            height: "44px",
+            minHeight: "44px",
             padding: "10px 12px",
             backgroundColor: "#f5f5f5",
             border: "none",
@@ -290,6 +292,8 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
             style={{
               width: "100%",
               maxWidth: "100%",
+              height: "44px",
+              minHeight: "44px",
               padding: "10px 12px",
               backgroundColor: "#f5f5f5",
               border: "none",
@@ -312,6 +316,8 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
             style={{
               width: "100%",
               maxWidth: "100%",
+              height: "44px",
+              minHeight: "44px",
               padding: "10px 12px",
               backgroundColor: "#f5f5f5",
               border: "none",
@@ -388,6 +394,8 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
             style={{
               width: "100%",
               maxWidth: "100%",
+              height: "44px",
+              minHeight: "44px",
               padding: "10px 12px",
               backgroundColor: "#f5f5f5",
               border: "none",
