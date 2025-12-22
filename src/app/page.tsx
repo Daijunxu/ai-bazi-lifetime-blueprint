@@ -215,9 +215,12 @@ function HomePageContent() {
             backgroundColor: "rgba(255, 255, 255, 0.95)",
             borderRadius: "16px",
             boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
-            padding: "24px",
+            padding: "clamp(16px, 4vw, 24px)",
             backdropFilter: "blur(10px)",
             marginBottom: "16px",
+            width: "100%",
+            boxSizing: "border-box",
+            overflow: "hidden",
           }}
         >
           <BirthForm

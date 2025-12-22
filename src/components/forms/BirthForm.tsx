@@ -132,15 +132,19 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
           alignItems: "center",
           padding: "16px 0",
           borderBottom: "1px solid #f0f0f0",
+          width: "100%",
+          boxSizing: "border-box",
         }}
       >
         <label
           htmlFor="name"
           style={{
-            minWidth: "80px",
+            flexShrink: 0,
+            width: "80px",
             fontSize: "15px",
             color: "#333",
             marginRight: "12px",
+            boxSizing: "border-box",
           }}
         >
           昵称
@@ -152,12 +156,15 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           style={{
             flex: 1,
+            minWidth: 0,
+            maxWidth: "100%",
             padding: "10px 12px",
             backgroundColor: "#f5f5f5",
             border: "none",
             borderRadius: "8px",
             fontSize: "15px",
             outline: "none",
+            boxSizing: "border-box",
           }}
           placeholder="请输入昵称 (1-6个字)"
         />
@@ -170,24 +177,38 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
           alignItems: "center",
           padding: "16px 0",
           borderBottom: "1px solid #f0f0f0",
+          width: "100%",
+          boxSizing: "border-box",
         }}
       >
         <label
           style={{
-            minWidth: "80px",
+            flexShrink: 0,
+            width: "80px",
             fontSize: "15px",
             color: "#333",
             marginRight: "12px",
+            boxSizing: "border-box",
           }}
         >
           性别
         </label>
-        <div style={{ flex: 1, display: "flex", gap: "12px" }}>
+        <div
+          style={{
+            flex: 1,
+            minWidth: 0,
+            maxWidth: "100%",
+            display: "flex",
+            gap: "12px",
+            boxSizing: "border-box",
+          }}
+        >
           <button
             type="button"
             onClick={() => setFormData({ ...formData, gender: "female" })}
             style={{
               flex: 1,
+              minWidth: 0,
               padding: "10px 16px",
               backgroundColor: formData.gender === "female" ? "#FFB6C1" : "#ffffff",
               color: formData.gender === "female" ? "#ffffff" : "#666",
@@ -197,6 +218,7 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
               fontWeight: formData.gender === "female" ? 500 : 400,
               cursor: "pointer",
               transition: "all 0.2s",
+              boxSizing: "border-box",
             }}
           >
             ♀ 女生
@@ -206,6 +228,7 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
             onClick={() => setFormData({ ...formData, gender: "male" })}
             style={{
               flex: 1,
+              minWidth: 0,
               padding: "10px 16px",
               backgroundColor: formData.gender === "male" ? "#87CEEB" : "#ffffff",
               color: formData.gender === "male" ? "#ffffff" : "#666",
@@ -215,6 +238,7 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
               fontWeight: formData.gender === "male" ? 500 : 400,
               cursor: "pointer",
               transition: "all 0.2s",
+              boxSizing: "border-box",
             }}
           >
             ♂ 男生
@@ -226,23 +250,36 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
       <div
         style={{
           display: "flex",
-          alignItems: "center",
+          alignItems: "flex-start",
           padding: "16px 0",
           borderBottom: "1px solid #f0f0f0",
+          width: "100%",
+          boxSizing: "border-box",
         }}
       >
         <label
           htmlFor="birthTime"
           style={{
-            minWidth: "80px",
+            flexShrink: 0,
+            width: "80px",
             fontSize: "15px",
             color: "#333",
             marginRight: "12px",
+            paddingTop: "10px",
+            boxSizing: "border-box",
           }}
         >
           出生时间
         </label>
-        <div style={{ flex: 1, position: "relative", minWidth: 0 }}>
+        <div
+          style={{
+            flex: 1,
+            position: "relative",
+            minWidth: 0,
+            maxWidth: "100%",
+            boxSizing: "border-box",
+          }}
+        >
           <input
             type="date"
             id="birthDate"
@@ -262,6 +299,8 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
               color: formData.birthDate ? "#333" : "#999",
               marginBottom: "8px",
               boxSizing: "border-box",
+              WebkitAppearance: "none",
+              appearance: "none",
             }}
           />
           <input
@@ -281,6 +320,8 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
               outline: "none",
               color: formData.birthTime ? "#333" : "#999",
               boxSizing: "border-box",
+              WebkitAppearance: "none",
+              appearance: "none",
             }}
           />
         </div>
@@ -294,20 +335,32 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
           padding: "16px 0",
           borderBottom: "1px solid #f0f0f0",
           position: "relative",
+          width: "100%",
+          boxSizing: "border-box",
         }}
       >
         <label
           htmlFor="birthCity"
           style={{
-            minWidth: "80px",
+            flexShrink: 0,
+            width: "80px",
             fontSize: "15px",
             color: "#333",
             marginRight: "12px",
+            boxSizing: "border-box",
           }}
         >
           出生地点
         </label>
-        <div style={{ flex: 1, position: "relative", minWidth: 0 }}>
+        <div
+          style={{
+            flex: 1,
+            position: "relative",
+            minWidth: 0,
+            maxWidth: "100%",
+            boxSizing: "border-box",
+          }}
+        >
           <input
             type="text"
             id="birthCity"
