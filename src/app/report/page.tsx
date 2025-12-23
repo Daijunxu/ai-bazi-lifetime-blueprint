@@ -12,7 +12,7 @@ import { FourPillarsTable } from "@/components/report/FourPillarsTable";
 // 技术分析仍然在后台运行，但不在 UI 中展示 TechnicalCard
 // import { TechnicalCard } from "@/components/report/TechnicalCard";
 import { ReportContent } from "@/components/report/ReportContent";
-import { getProfileById, type UserProfile } from "@/lib/storage/profileStorage";
+import { getProfileById, saveReportData, type UserProfile } from "@/lib/storage/profileStorage";
 import type { ChartJSON } from "@/types/bazi";
 import type { AnalystVerdictJSON } from "@/types/analyst";
 import type { BasicReport } from "@/types/report";
@@ -47,7 +47,17 @@ function ReportPageContent() {
 
     setProfile(savedProfile);
 
-    // 调用 API 生成报告
+    // 先检查本地是否有保存的报告数据
+    if (savedProfile.reportData) {
+      // 使用本地保存的报告数据
+      setChart(savedProfile.reportData.chart);
+      setVerdict(savedProfile.reportData.verdict);
+      setReport(savedProfile.reportData.report);
+      setLoading(false);
+      return;
+    }
+
+    // 如果没有本地报告，调用 API 生成报告
     const fetchReport = async () => {
       try {
         const response = await fetch("/api/v1/report/init", {
@@ -69,9 +79,16 @@ function ReportPageContent() {
           throw new Error(result.error?.message || "生成报告失败");
         }
 
-        setChart(result.data.chart);
-        setVerdict(result.data.verdict);
-        setReport(result.data.report);
+        const chartData = result.data.chart;
+        const verdictData = result.data.verdict;
+        const reportData = result.data.report;
+
+        // 保存报告数据到本地
+        saveReportData(profileId, chartData, verdictData, reportData);
+
+        setChart(chartData);
+        setVerdict(verdictData);
+        setReport(reportData);
       } catch (err) {
         console.error("加载报告失败:", err);
         setError(err instanceof Error ? err.message : "加载报告失败");

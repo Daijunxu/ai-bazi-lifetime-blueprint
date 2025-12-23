@@ -3,6 +3,10 @@
  * 使用 localStorage 保存最近 5 个用户命盘记录
  */
 
+import type { ChartJSON } from "@/types/bazi";
+import type { AnalystVerdictJSON } from "@/types/analyst";
+import type { BasicReport } from "@/types/report";
+
 export interface UserProfile {
   id: string; // 唯一标识符
   name?: string;
@@ -11,6 +15,13 @@ export interface UserProfile {
   birthCity: string;
   createdAt: string; // ISO 8601 格式
   updatedAt: string; // ISO 8601 格式
+  // 保存的报告数据（可选）
+  reportData?: {
+    chart: ChartJSON;
+    verdict: AnalystVerdictJSON;
+    report: BasicReport;
+    generatedAt: string; // ISO 8601 格式
+  };
 }
 
 const STORAGE_KEY = "bazi_profiles";
@@ -115,6 +126,56 @@ export function getProfileById(id: string): UserProfile | null {
 }
 
 /**
+ * 保存报告数据到 profile
+ */
+export function saveReportData(
+  profileId: string,
+  chart: ChartJSON,
+  verdict: AnalystVerdictJSON,
+  report: BasicReport
+): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const profiles = getProfiles();
+  const index = profiles.findIndex((p) => p.id === profileId);
+
+  if (index === -1) {
+    return false;
+  }
+
+  const existingProfile = profiles[index];
+  if (!existingProfile) {
+    return false;
+  }
+
+  const updatedProfile: UserProfile = {
+    ...existingProfile,
+    reportData: {
+      chart,
+      verdict,
+      report,
+      generatedAt: new Date().toISOString(),
+    },
+    updatedAt: new Date().toISOString(),
+  };
+
+  profiles[index] = updatedProfile;
+
+  // 按更新时间排序（最新的在前）
+  profiles.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(profiles));
+    return true;
+  } catch (error) {
+    console.error("保存报告数据失败:", error);
+    return false;
+  }
+}
+
+/**
  * 更新 profile
  */
 export function updateProfile(
@@ -137,12 +198,20 @@ export function updateProfile(
     throw new Error(`Profile with id ${id} not found`);
   }
 
+  // 如果更新了出生信息（birthDate, birthCity, gender），清除旧的报告数据
+  const hasBirthInfoChanged = 
+    (updates.birthDate !== undefined && updates.birthDate !== existingProfile.birthDate) ||
+    (updates.birthCity !== undefined && updates.birthCity !== existingProfile.birthCity) ||
+    (updates.gender !== undefined && updates.gender !== existingProfile.gender);
+
   const updatedProfile: UserProfile = {
     ...existingProfile,
     ...updates,
     id: existingProfile.id, // 保留原 ID
     createdAt: existingProfile.createdAt, // 保留创建时间
     updatedAt: new Date().toISOString(),
+    // 如果出生信息改变，清除报告数据
+    reportData: hasBirthInfoChanged ? undefined : existingProfile.reportData,
   };
 
   profiles[index] = updatedProfile;

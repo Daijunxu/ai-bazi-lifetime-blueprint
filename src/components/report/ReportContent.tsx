@@ -171,7 +171,9 @@ export function ReportContent({ content }: ReportContentProps) {
           sections.push(currentSection);
         }
         // 提取标题文本（去掉 # 号和空格）
-        const title = headingMatch[2]!.trim();
+        let title = headingMatch[2]!.trim();
+        // 去掉标题开头的数字和点号（如 "1. "、"2. "、"3. " 等）
+        title = title.replace(/^\d+\.\s*/, "");
         currentSection = { title, paragraphs: [] };
       } else if (trimmedLine === "") {
         // 空行，结束当前段落
@@ -350,7 +352,6 @@ export function ReportContent({ content }: ReportContentProps) {
           color: "#4b5563",
         }}
       >
-        <div style={{ fontSize: "clamp(24px, 6vw, 32px)", color: "#a855f7", marginBottom: 4 }}>&quot;</div>
         <p style={{ marginBottom: "clamp(6px, 1.5vw, 8px)" }}>
           报告写到这里，新的旅程才刚刚开始。
         </p>

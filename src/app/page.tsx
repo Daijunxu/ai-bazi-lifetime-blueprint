@@ -9,7 +9,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BirthForm, type BirthFormData } from "@/components/forms/BirthForm";
 import { ProfileHistory } from "@/components/ProfileHistory";
-import { saveProfile, getProfileById, updateProfile, type UserProfile } from "@/lib/storage/profileStorage";
+import { saveProfile, getProfileById, updateProfile, saveReportData, type UserProfile } from "@/lib/storage/profileStorage";
 
 function HomePageContent() {
   const router = useRouter();
@@ -86,6 +86,16 @@ function HomePageContent() {
         });
       }
 
+      // 保存报告数据到 profile
+      if (result.data?.chart && result.data?.verdict && result.data?.report) {
+        saveReportData(
+          profile.id,
+          result.data.chart,
+          result.data.verdict,
+          result.data.report
+        );
+      }
+
       // 跳转到报告页面（使用 profile ID 作为查询参数）
       router.push(`/report?profileId=${profile.id}`);
     } catch (err) {
@@ -101,7 +111,14 @@ function HomePageContent() {
     setError(null);
 
     try {
-      // 准备 API 请求数据
+      // 如果本地已有保存的报告数据，直接跳转，不需要重新生成
+      if (profile.reportData) {
+        router.push(`/report?profileId=${profile.id}`);
+        setIsLoading(false);
+        return;
+      }
+
+      // 如果没有本地报告，调用 API 生成
       const requestData = {
         name: profile.name,
         gender: profile.gender,
@@ -109,7 +126,6 @@ function HomePageContent() {
         birthCity: profile.birthCity,
       };
 
-      // 调用 API
       const response = await fetch("/api/v1/report/init", {
         method: "POST",
         headers: {
@@ -122,6 +138,16 @@ function HomePageContent() {
 
       if (!response.ok || !result.success) {
         throw new Error(result.error?.message || "生成报告失败");
+      }
+
+      // 保存报告数据到 profile
+      if (result.data?.chart && result.data?.verdict && result.data?.report) {
+        saveReportData(
+          profile.id,
+          result.data.chart,
+          result.data.verdict,
+          result.data.report
+        );
       }
 
       // 跳转到报告页面
