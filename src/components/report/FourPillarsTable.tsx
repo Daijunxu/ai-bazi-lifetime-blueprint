@@ -129,11 +129,12 @@ export function FourPillarsTable({ chart, gender }: FourPillarsTableProps) {
       style={{
         backgroundColor: "#ffffff",
         borderRadius: 12,
-        boxShadow: "0 4px 12px rgba(15,23,42,0.08)",
-        padding: "clamp(12px, 3vw, 16px)",
-        marginBottom: 20,
+        boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+        padding: "clamp(16px, 4vw, 24px)",
+        marginBottom: "clamp(20px, 5vw, 30px)",
         width: "100%",
         overflowX: "hidden", // 移除横向滚动，让表格自适应
+        boxSizing: "border-box",
       }}
     >
       <div

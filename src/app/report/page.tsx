@@ -155,10 +155,12 @@ function ReportPageContent() {
       <div
         style={{
           maxWidth: "768px",
+          width: "100%",
           margin: "0 auto",
-          padding: "16px",
-          paddingTop: "20px",
-          paddingBottom: "32px",
+          padding: "clamp(16px, 4vw, 24px)",
+          paddingTop: "clamp(20px, 5vw, 32px)",
+          paddingBottom: "clamp(32px, 8vw, 48px)",
+          boxSizing: "border-box",
         }}
       >
         {/* 用户信息 */}
@@ -229,6 +231,8 @@ function ReportPageContent() {
             borderRadius: 12,
             boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
             padding: "clamp(16px, 4vw, 24px)",
+            width: "100%",
+            boxSizing: "border-box",
           }}
         >
           <ReportContent content={report.content} />
