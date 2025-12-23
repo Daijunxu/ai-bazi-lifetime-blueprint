@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
         data: suggestions.map((s) => ({
           id: s.id,
           name: s.name,
-          displayName: s.name, // 显示名称（去掉"市"等后缀，如果需要）
+          displayName: s.displayName || s.name, // 使用层级显示名称，如果没有则使用城市名
         })),
       },
       { status: 200 }

@@ -55,6 +55,76 @@ interface CityData {
 }
 
 /**
+ * 生成层级显示名称，例如 "Hefei, Anhui, China"
+ * 对于中国的直辖市，不显示省份信息
+ */
+function formatCityDisplayName(
+  cityName: string,
+  provinceName?: string,
+  countryCode?: string
+): string {
+  const countryNames: Record<string, string> = {
+    CN: "China",
+    US: "United States",
+    GB: "United Kingdom",
+    FR: "France",
+    DE: "Germany",
+    IT: "Italy",
+    RU: "Russia",
+    JP: "Japan",
+    KR: "South Korea",
+    SG: "Singapore",
+    TH: "Thailand",
+    IN: "India",
+    AU: "Australia",
+    NZ: "New Zealand",
+    BR: "Brazil",
+    AR: "Argentina",
+    AE: "United Arab Emirates",
+    IL: "Israel",
+    HK: "Hong Kong",
+    TW: "Taiwan",
+  };
+
+  // 中国的直辖市列表（不显示省份）
+  const chineseMunicipalities = [
+    "北京", "北京市", "Beijing", "beijing",
+    "上海", "上海市", "Shanghai", "shanghai",
+    "天津", "天津市", "Tianjin", "tianjin",
+    "重庆", "重庆市", "Chongqing", "chongqing",
+  ];
+
+  const parts: string[] = [cityName];
+  
+  // 如果是中国的直辖市，不显示省份
+  // 检查城市名是否匹配直辖市（不区分大小写）
+  const cityNameLower = cityName.toLowerCase();
+  const isChineseMunicipality = chineseMunicipalities.some(
+    (municipality) => {
+      const municipalityLower = municipality.toLowerCase();
+      return cityNameLower === municipalityLower || 
+             cityNameLower.includes(municipalityLower) ||
+             municipalityLower.includes(cityNameLower);
+    }
+  );
+  
+  // 如果 provinceName 存在且不是数字，且不是中国的直辖市，则添加省份
+  if (provinceName && !isChineseMunicipality) {
+    // 检查 provinceName 是否为数字（可能是行政区划代码）
+    const isNumeric = /^\d+$/.test(provinceName.trim());
+    if (!isNumeric) {
+      parts.push(provinceName);
+    }
+  }
+  
+  if (countryCode) {
+    const countryName = countryNames[countryCode] || countryCode;
+    parts.push(countryName);
+  }
+  return parts.join(", ");
+}
+
+/**
  * 一个内存中的假实现，用于本地开发和单测。
  * 支持全球主要城市，包含时区信息。
  */
@@ -106,6 +176,17 @@ export class InMemoryGeoClient implements GeoClient {
           provinceName: "广东"
         },
         coordinates: { latitude: 22.5431, longitude: 114.0579 },
+        timezone: "Asia/Shanghai",
+        isApproximate: false
+      },
+      hefei: {
+        suggestion: {
+          id: "hefei",
+          name: "Hefei",
+          countryCode: "CN",
+          provinceName: "Anhui"
+        },
+        coordinates: { latitude: 31.8206, longitude: 117.2272 },
         timezone: "Asia/Shanghai",
         isApproximate: false
       },
@@ -161,6 +242,17 @@ export class InMemoryGeoClient implements GeoClient {
         },
         coordinates: { latitude: 41.8781, longitude: -87.6298 },
         timezone: "America/Chicago",
+        isApproximate: false
+      },
+      seattle: {
+        suggestion: {
+          id: "seattle",
+          name: "Seattle",
+          countryCode: "US",
+          provinceName: "Washington"
+        },
+        coordinates: { latitude: 47.6062, longitude: -122.3321 },
+        timezone: "America/Los_Angeles",
         isApproximate: false
       },
       // 欧洲主要城市
@@ -365,12 +457,14 @@ export class InMemoryGeoClient implements GeoClient {
       "上海": "shanghai", "上海市": "shanghai", "shanghai": "shanghai",
       "广州": "guangzhou", "广州市": "guangzhou", "guangzhou": "guangzhou", "canton": "guangzhou",
       "深圳": "shenzhen", "深圳市": "shenzhen", "shenzhen": "shenzhen",
+      "合肥": "hefei", "hefei": "hefei",
       "香港": "hongkong", "hongkong": "hongkong", "hong kong": "hongkong",
       "台北": "taipei", "台北市": "taipei", "taipei": "taipei", "taipei city": "taipei",
       // 美国城市
       "纽约": "new-york", "new york": "new-york", "new-york": "new-york", "nyc": "new-york",
       "洛杉矶": "los-angeles", "los angeles": "los-angeles", "los-angeles": "los-angeles", "la": "los-angeles",
       "芝加哥": "chicago", "chicago": "chicago",
+      "西雅图": "seattle", "seattle": "seattle",
       // 欧洲城市
       "伦敦": "london", "london": "london",
       "巴黎": "paris", "paris": "paris",
@@ -404,7 +498,14 @@ export class InMemoryGeoClient implements GeoClient {
                    cityNameMap[queryWithoutSuffixCN] || cityNameMap[queryWithoutSuffix];
     
     if (cityId && this.cities[cityId]) {
-      return [this.cities[cityId].suggestion];
+      const suggestion = { ...this.cities[cityId].suggestion };
+      // 添加层级显示名称
+      suggestion.displayName = formatCityDisplayName(
+        suggestion.name,
+        suggestion.provinceName,
+        suggestion.countryCode
+      );
+      return [suggestion];
     }
 
     // 2. 如果 cities.json 可用，从中搜索
@@ -467,11 +568,20 @@ export class InMemoryGeoClient implements GeoClient {
       });
 
       if (exactMatches.length > 0) {
-        return exactMatches.slice(0, 10).map((city, idx) => ({
-          id: `cities-${city.name}-${city.country}-${idx}`,
-          name: city.name,
-          countryCode: city.country,
-        }));
+        return exactMatches.slice(0, 10).map((city, idx) => {
+          const displayName = formatCityDisplayName(
+            city.name,
+            city.admin1, // 使用 admin1 作为省份/州
+            city.country
+          );
+          return {
+            id: `cities-${city.name}-${city.country}-${idx}`,
+            name: city.name,
+            countryCode: city.country,
+            provinceName: city.admin1,
+            displayName,
+          };
+        });
       }
 
       // 模糊匹配
@@ -485,17 +595,35 @@ export class InMemoryGeoClient implements GeoClient {
         .slice(0, 20); // 限制返回数量
 
       if (fuzzyMatches.length > 0) {
-        return fuzzyMatches.map((city, idx) => ({
-          id: `cities-${city.name}-${city.country}-${idx}`,
-          name: city.name,
-          countryCode: city.country,
-        }));
+        return fuzzyMatches.map((city, idx) => {
+          const displayName = formatCityDisplayName(
+            city.name,
+            city.admin1, // 使用 admin1 作为省份/州
+            city.country
+          );
+          return {
+            id: `cities-${city.name}-${city.country}-${idx}`,
+            name: city.name,
+            countryCode: city.country,
+            provinceName: city.admin1,
+            displayName,
+          };
+        });
       }
     }
 
     // 3. 回退到内置城市的模糊匹配
     return Object.values(this.cities)
-      .map((entry) => entry.suggestion)
+      .map((entry) => {
+        const suggestion = { ...entry.suggestion };
+        // 添加层级显示名称
+        suggestion.displayName = formatCityDisplayName(
+          suggestion.name,
+          suggestion.provinceName,
+          suggestion.countryCode
+        );
+        return suggestion;
+      })
       .filter((s) => {
         const cityNameLower = s.name.toLowerCase();
         const queryLower = query.trim().toLowerCase();

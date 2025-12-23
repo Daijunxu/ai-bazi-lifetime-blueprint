@@ -5,10 +5,12 @@
 
 export interface CitySuggestion {
   id: string; // 内部或第三方 placeId
-  name: string; // 展示名称，例如「上海市」
+  name: string; // 城市名称，例如 "Hefei" 或 "北京市"
   countryCode: string; // ISO 国家码，例如 CN
   // 可选：行政层级信息，方便未来做更精细展示
   provinceName?: string;
+  // 层级显示名称，例如 "Hefei, Anhui, China"
+  displayName?: string;
 }
 
 export interface Coordinates {

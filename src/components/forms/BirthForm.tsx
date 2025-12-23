@@ -35,6 +35,7 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
   const [citySuggestions, setCitySuggestions] = useState<Array<{ id: string; name: string; displayName: string }>>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSearchingCity, setIsSearchingCity] = useState(false);
+  const [citySearchInput, setCitySearchInput] = useState("");
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const suggestionsRef = useRef<HTMLUListElement>(null);
 
@@ -81,8 +82,7 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
   };
 
   const handleCityInput = (value: string) => {
-    setFormData({ ...formData, birthCity: value });
-    
+    // 只更新搜索输入，不更新表单数据
     // 清除之前的定时器
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
@@ -95,7 +95,6 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
       }, 300);
     } else {
       setCitySuggestions([]);
-      setShowSuggestions(false);
     }
   };
 
@@ -108,14 +107,16 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
     };
   }, []);
 
-  const handleSelectCity = (city: { name: string }) => {
-    // 使用完整的城市名称（后端支持带"市"的名称）
+  const handleSelectCity = (city: { name: string; displayName?: string }) => {
+    // 使用层级显示名称（如 "Hefei, Anhui, China"），如果没有则使用城市名
+    const cityValue = city.displayName || city.name;
     setFormData((prev) => ({
       ...prev,
-      birthCity: city.name,
+      birthCity: cityValue,
     }));
     setCitySuggestions([]);
     setShowSuggestions(false);
+    setCitySearchInput("");
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -371,24 +372,24 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
             type="text"
             id="birthCity"
             value={formData.birthCity}
-            onChange={(e) => handleCityInput(e.target.value)}
+            readOnly
             onFocus={() => {
-              if (citySuggestions.length > 0) {
-                setShowSuggestions(true);
-              } else if (formData.birthCity.length > 0) {
-                // 如果有输入但还没有建议，触发搜索
-                searchCity(formData.birthCity);
+              // 当输入框获得焦点时，显示建议列表
+              // 如果有已输入的城市名，尝试搜索；否则显示空列表让用户输入搜索
+              if (formData.birthCity.length > 0) {
+                // 提取城市名（去掉层级信息，只取第一部分）
+                const cityNameOnly = formData.birthCity.split(",")[0]?.trim() || formData.birthCity;
+                searchCity(cityNameOnly);
               }
+              setShowSuggestions(true);
             }}
-            onBlur={(e) => {
-              // 延迟隐藏，以便点击建议项
-              setTimeout(() => {
-                // 检查焦点是否移到了建议列表
-                const activeElement = document.activeElement;
-                if (!suggestionsRef.current?.contains(activeElement)) {
-                  setShowSuggestions(false);
-                }
-              }, 200);
+            onClick={() => {
+              // 点击时也显示建议列表
+              if (formData.birthCity.length > 0) {
+                const cityNameOnly = formData.birthCity.split(",")[0]?.trim() || formData.birthCity;
+                searchCity(cityNameOnly);
+              }
+              setShowSuggestions(true);
             }}
             required
             style={{
@@ -404,10 +405,52 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
               outline: "none",
               color: formData.birthCity ? "#333" : "#999",
               boxSizing: "border-box",
+              cursor: "pointer",
             }}
             placeholder="请选择"
           />
-          {showSuggestions && citySuggestions.length > 0 && (
+          {/* 搜索输入框（当需要搜索时显示） */}
+          {showSuggestions && (
+            <input
+              type="text"
+              autoFocus
+              value={citySearchInput}
+              onChange={(e) => {
+                setCitySearchInput(e.target.value);
+                handleCityInput(e.target.value);
+              }}
+              onBlur={(e) => {
+                // 延迟隐藏，以便点击建议项
+                setTimeout(() => {
+                  const activeElement = document.activeElement;
+                  if (!suggestionsRef.current?.contains(activeElement)) {
+                    setShowSuggestions(false);
+                    setCitySearchInput("");
+                  }
+                }, 200);
+              }}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                width: "100%",
+                height: "44px",
+                minHeight: "44px",
+                padding: "10px 12px",
+                backgroundColor: "#ffffff",
+                border: "1px solid #87CEEB",
+                borderRadius: "8px",
+                fontSize: "15px",
+                outline: "none",
+                color: "#333",
+                boxSizing: "border-box",
+                zIndex: 11,
+              }}
+              placeholder="搜索城市..."
+            />
+          )}
+          {showSuggestions && (
             <ul
               ref={suggestionsRef}
               style={{
@@ -431,26 +474,41 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
                 e.preventDefault();
               }}
             >
-              {citySuggestions.map((city) => (
-                <li
-                  key={city.id}
-                  onClick={() => handleSelectCity(city)}
-                  style={{
-                    padding: "12px 16px",
-                    cursor: "pointer",
-                    fontSize: "15px",
-                    borderBottom: "1px solid #f0f0f0",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = "#f5f5f5";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "#ffffff";
-                  }}
-                >
-                  {city.displayName || city.name}
-                </li>
-              ))}
+              {citySuggestions.length > 0 ? (
+                citySuggestions.map((city) => (
+                  <li
+                    key={city.id}
+                    onClick={() => handleSelectCity(city)}
+                    style={{
+                      padding: "12px 16px",
+                      cursor: "pointer",
+                      fontSize: "15px",
+                      borderBottom: "1px solid #f0f0f0",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "#f5f5f5";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "#ffffff";
+                    }}
+                  >
+                    {city.displayName || city.name}
+                  </li>
+                ))
+              ) : (
+                citySearchInput.length > 0 && !isSearchingCity && (
+                  <li
+                    style={{
+                      padding: "12px 16px",
+                      fontSize: "14px",
+                      color: "#999",
+                      textAlign: "center",
+                    }}
+                  >
+                    未找到匹配的城市
+                  </li>
+                )
+              )}
             </ul>
           )}
           {isSearchingCity && (
