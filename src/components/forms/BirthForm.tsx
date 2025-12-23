@@ -169,7 +169,7 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
             outline: "none",
             boxSizing: "border-box",
           }}
-          placeholder="请输入昵称 (1-6个字)"
+          placeholder="请输入昵称（1-6个字），昵称不影响八字测算"
         />
       </div>
 
@@ -308,29 +308,53 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
               appearance: "none",
             }}
           />
-          <input
-            type="time"
-            id="birthTime"
-            value={formData.birthTime}
-            onChange={(e) => setFormData({ ...formData, birthTime: e.target.value })}
-            required
-            style={{
-              width: "100%",
-              maxWidth: "100%",
-              height: "44px",
-              minHeight: "44px",
-              padding: "10px 12px",
-              backgroundColor: "#f5f5f5",
-              border: "none",
-              borderRadius: "8px",
-              fontSize: "15px",
-              outline: "none",
-              color: formData.birthTime ? "#333" : "#999",
-              boxSizing: "border-box",
-              WebkitAppearance: "none",
-              appearance: "none",
-            }}
-          />
+          <div style={{ position: "relative", width: "100%" }}>
+            <input
+              type="time"
+              id="birthTime"
+              value={formData.birthTime}
+              onChange={(e) => setFormData({ ...formData, birthTime: e.target.value })}
+              required
+              style={{
+                width: "100%",
+                maxWidth: "100%",
+                height: "44px",
+                minHeight: "44px",
+                padding: "10px 12px",
+                backgroundColor: "#f5f5f5",
+                border: "none",
+                borderRadius: "8px",
+                fontSize: "15px",
+                outline: "none",
+                color: formData.birthTime ? "#333" : "transparent",
+                boxSizing: "border-box",
+                WebkitAppearance: "none",
+                appearance: "none",
+                position: "relative",
+                zIndex: 1,
+              }}
+            />
+            {!formData.birthTime && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: "44px",
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "0 12px",
+                  color: "#999",
+                  fontSize: "15px",
+                  pointerEvents: "none",
+                  zIndex: 2,
+                }}
+              >
+                --：-- AM/PM
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
