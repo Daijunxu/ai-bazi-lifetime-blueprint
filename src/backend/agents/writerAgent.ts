@@ -121,7 +121,7 @@ function loadBasicSystemPrompt(): string {
 分析当前大运的影响。说明这个阶段的主题、机会和挑战，以及如何善用这个阶段的能量。
 
 ### 6. 当前流年分析（Current Year Analysis）
-深入分析当前年份（例如 2025 年）的流年影响。说明这一年需要关注的重点领域和行动建议。
+深入分析当前年份（例如 2025 年）的流年影响。说明这一年需要关注的重点领域和行动建议。如果当前时间在9月1日及以后，报告将分析下一年的流年影响，请在章节开头明确说明这一点。
 
 ## 写作风格
 
@@ -200,8 +200,43 @@ export async function generateBasicReport(
 ): Promise<BasicReport> {
   const systemPrompt = loadBasicSystemPrompt();
   const dataText = formatDataForLLM(chart, verdict, gender, birthDate);
-  const year = currentYear || new Date().getFullYear();
+  
+  // 确定报告年份：如果未指定，根据当前日期判断
+  let year: number;
+  let isNextYear = false;
+  
+  if (currentYear) {
+    year = currentYear;
+    // 检查是否是下一年（如果传入的年份大于当前年份）
+    const now = new Date();
+    const currentYearNow = now.getFullYear();
+    if (year > currentYearNow) {
+      isNextYear = true;
+    } else {
+      // 检查当前日期是否在9月1日及以后
+      const currentMonth = now.getMonth() + 1;
+      const currentDay = now.getDate();
+      if (currentMonth > 9 || (currentMonth === 9 && currentDay >= 1)) {
+        isNextYear = true;
+      }
+    }
+  } else {
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1;
+    const currentDay = now.getDate();
+    const currentYearNow = now.getFullYear();
+    
+    // 如果当前日期在9月1日及以后，使用下一年
+    if (currentMonth > 9 || (currentMonth === 9 && currentDay >= 1)) {
+      year = currentYearNow + 1;
+      isNextYear = true;
+    } else {
+      year = currentYearNow;
+    }
+  }
 
+  const yearNote = isNextYear ? `（注意：当前时间已进入9月，本报告分析的是 ${year} 年的流年影响）` : "";
+  
   const messages: LLMMessage[] = [
     {
       role: "system",
@@ -209,7 +244,7 @@ export async function generateBasicReport(
     },
     {
       role: "user",
-      content: `请基于以下命盘数据和技术分析结论，生成一份完整的八字命理报告（简体中文，Markdown 格式）。\n\n${dataText}\n\n注意：当前年份是 ${year} 年，请在"当前流年分析"章节中分析 ${year} 年的影响。`,
+      content: `请基于以下命盘数据和技术分析结论，生成一份完整的八字命理报告（简体中文，Markdown 格式）。\n\n${dataText}\n\n注意：当前年份是 ${year} 年${yearNote}，请在"当前流年分析"章节中分析 ${year} 年的影响。`,
     },
   ];
 

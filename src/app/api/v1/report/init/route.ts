@@ -63,8 +63,19 @@ export async function POST(request: NextRequest) {
     // 步骤 5: 生成基础报告（Layer 3）
     // 使用真实的 LLM 客户端（可以复用同一个实例，也可以创建新实例）
     const writerLLMClient = createLLMClient();
-    const currentYear = new Date().getFullYear();
-    const report = await generateBasicReport(chart, verdict, writerLLMClient, currentYear, birthInput.gender, birthInput.birthDate);
+    
+    // 流年取用逻辑：如果当前时间在9月1日及以后，显示下一年的大运
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1; // getMonth() 返回 0-11
+    const currentDay = now.getDate();
+    let reportYear = now.getFullYear();
+    
+    // 如果当前日期在9月1日及以后，使用下一年
+    if (currentMonth > 9 || (currentMonth === 9 && currentDay >= 1)) {
+      reportYear = reportYear + 1;
+    }
+    
+    const report = await generateBasicReport(chart, verdict, writerLLMClient, reportYear, birthInput.gender, birthInput.birthDate);
 
     // 返回成功响应
     return NextResponse.json(
