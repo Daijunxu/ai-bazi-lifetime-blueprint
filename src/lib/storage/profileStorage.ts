@@ -13,6 +13,11 @@ export interface UserProfile {
   gender: "male" | "female";
   birthDate: string; // ISO 8601 格式
   birthCity: string;
+  /**
+   * 出生城市的内部 ID（来自城市搜索接口），用于精确定位经纬度与时区
+   * 可选：老数据可能没有该字段
+   */
+  birthCityId?: string;
   createdAt: string; // ISO 8601 格式
   updatedAt: string; // ISO 8601 格式
   // 保存的报告数据（可选）

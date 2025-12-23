@@ -20,6 +20,11 @@ export const BirthInputSchema = z.object({
     message: "Invalid datetime string",
   }),
   birthCity: z.string().min(1, "出生城市不能为空"),
+  /**
+   * 出生城市的内部 ID（来自城市搜索接口），用于精确解析经纬度与时区
+   * 老数据/手填城市可能没有该字段，因此为可选
+   */
+  birthCityId: z.string().optional(),
 });
 
 export type BirthInput = z.infer<typeof BirthInputSchema>;

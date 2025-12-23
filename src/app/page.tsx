@@ -49,6 +49,8 @@ function HomePageContent() {
         gender: formData.gender,
         birthDate: localDateTime, // 直接发送本地时间字符串
         birthCity: formData.birthCity,
+        // 如果有城市 ID，一并发送，后端可直接用于解析经纬度
+        birthCityId: formData.birthCityId,
       };
 
       // 调用 API
@@ -75,6 +77,7 @@ function HomePageContent() {
           gender: formData.gender,
           birthDate: localDateTime,
           birthCity: formData.birthCity,
+          birthCityId: formData.birthCityId,
         });
       } else {
         // 创建新 profile
@@ -83,6 +86,7 @@ function HomePageContent() {
           gender: formData.gender,
           birthDate: localDateTime,
           birthCity: formData.birthCity,
+          birthCityId: formData.birthCityId,
         });
       }
 
@@ -124,6 +128,7 @@ function HomePageContent() {
         gender: profile.gender,
         birthDate: profile.birthDate,
         birthCity: profile.birthCity,
+        birthCityId: profile.birthCityId,
       };
 
       const response = await fetch("/api/v1/report/init", {

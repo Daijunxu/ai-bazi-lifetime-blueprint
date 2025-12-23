@@ -179,6 +179,18 @@ export class InMemoryGeoClient implements GeoClient {
         timezone: "Asia/Shanghai",
         isApproximate: false
       },
+      zhanjiang: {
+        suggestion: {
+          id: "zhanjiang",
+          name: "Zhanjiang",
+          countryCode: "CN",
+          provinceName: "Guangdong"
+        },
+        // 湛江大致经纬度：21.2707°N, 110.3589°E
+        coordinates: { latitude: 21.2707, longitude: 110.3589 },
+        timezone: "Asia/Shanghai",
+        isApproximate: false
+      },
       hefei: {
         suggestion: {
           id: "hefei",
@@ -457,6 +469,7 @@ export class InMemoryGeoClient implements GeoClient {
       "上海": "shanghai", "上海市": "shanghai", "shanghai": "shanghai",
       "广州": "guangzhou", "广州市": "guangzhou", "guangzhou": "guangzhou", "canton": "guangzhou",
       "深圳": "shenzhen", "深圳市": "shenzhen", "shenzhen": "shenzhen",
+      "湛江": "zhanjiang", "湛江市": "zhanjiang", "zhanjiang": "zhanjiang",
       "合肥": "hefei", "hefei": "hefei",
       "香港": "hongkong", "hongkong": "hongkong", "hong kong": "hongkong",
       "台北": "taipei", "台北市": "taipei", "taipei": "taipei", "taipei city": "taipei",
@@ -515,6 +528,7 @@ export class InMemoryGeoClient implements GeoClient {
       const chineseCityMap: Record<string, string> = {
         "合肥": "Hefei",
         "西雅图": "Seattle",
+          "湛江": "Zhanjiang",
         "成都": "Chengdu",
         "重庆": "Chongqing",
         "杭州": "Hangzhou",

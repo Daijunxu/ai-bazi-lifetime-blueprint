@@ -244,6 +244,55 @@ export async function calculateChart(
       minute
     );
 
+    // 使用我们自己的真太阳时与时柱规则重算时柱，避免第三方库在时柱上的差异
+    // 只在成功拿到四柱且有真太阳时时才覆盖库返回的时柱
+    if (input.solarTime.applied) {
+      const solarTimeString = input.solarTime.solarTimeIso;
+      const matchSolar = solarTimeString.match(
+        /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/
+      );
+      if (
+        matchSolar &&
+        matchSolar[1] &&
+        matchSolar[2] &&
+        matchSolar[3] &&
+        matchSolar[4] &&
+        matchSolar[5]
+      ) {
+        const solarYear = parseInt(matchSolar[1], 10);
+        const solarMonth = parseInt(matchSolar[2], 10);
+        const solarDay = parseInt(matchSolar[3], 10);
+        const solarHour = parseInt(matchSolar[4], 10);
+        const solarMinute = parseInt(matchSolar[5], 10);
+
+        const solarDateForHour = new Date(
+          solarYear,
+          solarMonth - 1,
+          solarDay,
+          solarHour,
+          solarMinute
+        );
+
+        const dayPillarForHour = getDayPillar(solarDateForHour);
+        const hourBranch = hourToBranch(solarDateForHour.getHours());
+        const hourStem = getHourStem(hourBranch, dayPillarForHour.stem);
+        const hourHiddenStems = getHiddenStemsForBranch(hourBranch).map((h) => ({
+          stem: h.stem,
+          tenGod: calculateTenGod(dayPillarForHour.stem, h.stem),
+          strength: h.strength,
+        }));
+
+        fourPillars = {
+          ...fourPillars,
+          hour: {
+            heavenlyStem: hourStem,
+            earthlyBranch: hourBranch,
+            hiddenStems: hourHiddenStems,
+          },
+        };
+      }
+    }
+
     // 调试：输出计算后的四柱
     if (process.env.NODE_ENV === "development") {
       console.log("[Bazi Calculation] 计算后的四柱:", {

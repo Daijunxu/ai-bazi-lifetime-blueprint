@@ -207,14 +207,42 @@ export function getHourStem(
 
 /**
  * 根据小时数（0-23）转换为时支
+ * 
+ * 传统八字时支划分：
+ * - 子时：23:00-01:00（包括01:00，01:00算作子时）
+ * - 丑时：01:00-03:00（不包括01:00）
+ * - 寅时：03:00-05:00
+ * - 卯时：05:00-07:00
+ * - 辰时：07:00-09:00
+ * - 巳时：09:00-11:00
+ * - 午时：11:00-13:00
+ * - 未时：13:00-15:00
+ * - 申时：15:00-17:00
+ * - 酉时：17:00-19:00
+ * - 戌时：19:00-21:00
+ * - 亥时：21:00-23:00
  */
 export function hourToBranch(hour: number): EarthlyBranch {
-  // 子时：23-1, 丑时：1-3, ..., 亥时：21-23
-  const adjustedHour = hour === 0 ? 24 : hour;
-  const branchIndex = Math.floor((adjustedHour + 1) / 2) % 12;
+  // 子时：23:00-01:00（包括01:00）
+  if (hour === 23 || hour === 0 || hour === 1) {
+    return "Zi"; // 子时
+  }
+  
+  // 其他时辰：每2小时一个时辰
+  // 丑时：01:00-03:00（不包括01:00，所以从02:00开始）
+  // 寅时：03:00-05:00
+  // 卯时：05:00-07:00
+  // 辰时：07:00-09:00
+  // ...
+  // 对于 02:00-22:00，使用公式：Math.floor((hour + 1) / 2)
+  // 02:00 -> (2+1)/2 = 1.5 -> 1 (丑)
+  // 03:00 -> (3+1)/2 = 2 (寅)
+  // 05:00 -> (5+1)/2 = 3 (卯)
+  // 07:00 -> (7+1)/2 = 4 (辰)
+  const branchIndex = Math.floor((hour + 1) / 2);
   const branch = EARTHLY_BRANCHES[branchIndex];
   if (!branch) {
-    throw new Error(`Invalid hour branch index: ${branchIndex}`);
+    throw new Error(`Invalid hour branch index: ${branchIndex} for hour ${hour}`);
   }
   return branch;
 }

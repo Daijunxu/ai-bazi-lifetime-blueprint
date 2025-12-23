@@ -14,7 +14,15 @@ export interface BirthFormData {
   gender: "male" | "female";
   birthDate: string; // YYYY-MM-DD
   birthTime: string; // HH:mm
+  /**
+   * 用户看到的城市显示名称，例如 "Hefei, Anhui, China"
+   */
   birthCity: string;
+  /**
+   * 城市的内部 ID（来自 /api/v1/geo/search-city 返回的 id）
+   * 用于在后端直接 resolveCoordinates，避免二次模糊匹配导致经纬度偏差
+   */
+  birthCityId?: string;
 }
 
 interface BirthFormProps {
@@ -30,9 +38,11 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
     birthDate: initialData?.birthDate || "",
     birthTime: initialData?.birthTime || "",
     birthCity: initialData?.birthCity || "",
+    birthCityId: initialData?.birthCityId,
   });
-
-  const [citySuggestions, setCitySuggestions] = useState<Array<{ id: string; name: string; displayName: string }>>([]);
+  const [citySuggestions, setCitySuggestions] = useState<
+    Array<{ id: string; name: string; displayName: string }>
+  >([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSearchingCity, setIsSearchingCity] = useState(false);
   const [citySearchInput, setCitySearchInput] = useState("");
@@ -48,6 +58,7 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
         birthDate: initialData.birthDate ?? "",
         birthTime: initialData.birthTime ?? "",
         birthCity: initialData.birthCity ?? "",
+        birthCityId: initialData.birthCityId,
       });
     }
   }, [initialData]);
@@ -107,12 +118,14 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
     };
   }, []);
 
-  const handleSelectCity = (city: { name: string; displayName?: string }) => {
+  const handleSelectCity = (city: { id: string; name: string; displayName?: string }) => {
     // 使用层级显示名称（如 "Hefei, Anhui, China"），如果没有则使用城市名
     const cityValue = city.displayName || city.name;
     setFormData((prev) => ({
       ...prev,
       birthCity: cityValue,
+      // 记录城市唯一 ID，后端可以直接用来解析经纬度和时区
+      birthCityId: city.id,
     }));
     setCitySuggestions([]);
     setShowSuggestions(false);
@@ -499,7 +512,7 @@ export function BirthForm({ onSubmit, initialData, isLoading = false }: BirthFor
               }}
             >
               {citySuggestions.length > 0 ? (
-                citySuggestions.map((city) => (
+                citySuggestions.map((city: { id: string; name: string; displayName: string }) => (
                   <li
                     key={city.id}
                     onClick={() => handleSelectCity(city)}

@@ -25,26 +25,55 @@ export async function POST(request: NextRequest) {
 
     // 步骤 1: 地理编码（获取城市坐标）
     const geoClient = new InMemoryGeoClient();
-    const citySuggestions = await geoClient.searchCity(birthInput.birthCity);
 
     let solarTime;
-    if (citySuggestions.length > 0 && citySuggestions[0]) {
-      // 使用第一个匹配的城市
-      const cityId = citySuggestions[0].id;
+    let resolved = false;
+
+    // 1.1 优先使用前端传入的城市 ID（来自城市搜索接口），避免再次模糊搜索导致经纬度偏差
+    if (birthInput.birthCityId) {
       try {
-        // 步骤 2: 计算真太阳时（使用改进的版本，支持时区）
-        const geoResult = await geoClient.resolveCoordinates(cityId);
+        const geoResult = await geoClient.resolveCoordinates(birthInput.birthCityId);
         if (geoResult.coordinates) {
           solarTime = toTrueSolarTime(birthInput.birthDate, geoResult);
-        } else {
-          solarTime = fallbackSolarTime(birthInput.birthDate);
+          resolved = true;
         }
       } catch (error) {
-        // 解析坐标失败，使用 fallback
-        solarTime = fallbackSolarTime(birthInput.birthDate);
+        console.warn(
+          "[Geo] resolveCoordinates with birthCityId failed, will fallback to name search:",
+          error
+        );
       }
-    } else {
-      // 地理编码失败，使用 fallback
+    }
+
+    // 1.2 如果没有城市 ID，或者通过 ID 解析失败，再根据城市名称模糊搜索
+    if (!resolved) {
+      // 如果用户传的是带层级的显示名（如 "Seattle, Washington, United States"），先取逗号前的主城市名做匹配
+      const searchText =
+        birthInput.birthCity.includes(",")
+          ? birthInput.birthCity.split(",")[0]!.trim()
+          : birthInput.birthCity;
+
+      const citySuggestions = await geoClient.searchCity(searchText);
+
+      if (citySuggestions.length > 0 && citySuggestions[0]) {
+        const cityId = citySuggestions[0].id;
+        try {
+          const geoResult = await geoClient.resolveCoordinates(cityId);
+          if (geoResult.coordinates) {
+            solarTime = toTrueSolarTime(birthInput.birthDate, geoResult);
+            resolved = true;
+          }
+        } catch (error) {
+          console.warn(
+            "[Geo] resolveCoordinates with searchCity result failed, will use fallback solar time:",
+            error
+          );
+        }
+      }
+    }
+
+    // 1.3 如果仍然无法成功解析坐标，则退回到不含真太阳时修正的计算
+    if (!resolved) {
       solarTime = fallbackSolarTime(birthInput.birthDate);
     }
 
