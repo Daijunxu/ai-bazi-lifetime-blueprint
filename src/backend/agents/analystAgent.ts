@@ -11,10 +11,41 @@ import type { LLMClient, LLMMessage } from "../llm/llmClient";
 /**
  * 将 ChartJSON 转换为 LLM 可理解的文本格式
  */
-function formatChartForLLM(chart: ChartJSON, gender?: "male" | "female"): string {
+function calcCurrentAge(birthDate?: string): number | null {
+  if (!birthDate) return null;
+  const birth = new Date(birthDate);
+  if (Number.isNaN(birth.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - birth.getFullYear();
+  const m = now.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) {
+    age--;
+  }
+  return age;
+}
+
+function formatChartForLLM(
+  chart: ChartJSON,
+  gender?: "male" | "female",
+  birthDate?: string
+): string {
   const { fourPillars, luckPillars, interactionMatrix, starGods } = chart;
   
   const genderLabel = gender === "female" ? "元女" : "元男";
+
+  const currentAge = calcCurrentAge(birthDate);
+  let activeLuckText = "";
+  if (luckPillars.length > 0) {
+    const active = currentAge != null
+      ? luckPillars.find((lp) => lp.startAge <= currentAge && lp.endAge >= currentAge)
+      : null;
+    if (active) {
+      activeLuckText = `当前大运：第${active.index}步（${active.startAge}-${active.endAge}岁），${active.pillar.heavenlyStem}${active.pillar.earthlyBranch}`;
+    } else if (currentAge != null && currentAge < luckPillars[0]!.startAge) {
+      const first = luckPillars[0]!;
+      activeLuckText = `当前年龄 ${currentAge} 岁尚未起运，将提前参考即将到来的第${first.index}步大运（${first.startAge}-${first.endAge}岁，${first.pillar.heavenlyStem}${first.pillar.earthlyBranch}），报告中请注明这是即将到来的第一步大运。`;
+    }
+  }
 
   let text = "## 四柱信息\n\n";
   text += `年柱：${fourPillars.year.heavenlyStem}${fourPillars.year.earthlyBranch}\n`;
@@ -48,6 +79,10 @@ function formatChartForLLM(chart: ChartJSON, gender?: "male" | "female"): string
     text += `第${luck.index}步大运（${luck.startAge}-${luck.endAge}岁）：${luck.pillar.heavenlyStem}${luck.pillar.earthlyBranch}\n`;
   });
   text += "\n";
+
+  if (activeLuckText) {
+    text += `## 当前大运指示\n\n${activeLuckText}\n\n`;
+  }
 
   if (interactionMatrix.entries.length > 0) {
     text += "## 互动关系\n\n";
@@ -196,10 +231,11 @@ function parseAnalystResponse(response: string): AnalystVerdictJSON {
 export async function analyzeChart(
   chart: ChartJSON,
   llmClient: LLMClient,
-  gender?: "male" | "female"
+  gender?: "male" | "female",
+  birthDate?: string
 ): Promise<AnalystVerdictJSON> {
   const systemPrompt = loadSystemPrompt();
-  const chartText = formatChartForLLM(chart, gender);
+  const chartText = formatChartForLLM(chart, gender, birthDate);
 
   const messages: LLMMessage[] = [
     {

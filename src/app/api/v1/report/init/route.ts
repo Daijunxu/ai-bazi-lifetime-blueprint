@@ -87,7 +87,12 @@ export async function POST(request: NextRequest) {
     // 步骤 4: 分析命盘（Layer 2）
     // 使用真实的 LLM 客户端（根据环境变量自动选择 provider）
     const analystLLMClient = createLLMClient();
-    const verdict = await analyzeChart(chart, analystLLMClient, birthInput.gender);
+    const verdict = await analyzeChart(
+      chart,
+      analystLLMClient,
+      birthInput.gender,
+      birthInput.birthDate
+    );
 
     // 步骤 5: 生成基础报告（Layer 3）
     // 使用真实的 LLM 客户端（可以复用同一个实例，也可以创建新实例）

@@ -12,6 +12,19 @@ import type { LLMClient, LLMMessage } from "../llm/llmClient";
 /**
  * 将 ChartJSON 和 AnalystVerdictJSON 格式化为 LLM 可理解的文本
  */
+function calcCurrentAge(birthDate?: string): number | null {
+  if (!birthDate) return null;
+  const birth = new Date(birthDate);
+  if (Number.isNaN(birth.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - birth.getFullYear();
+  const m = now.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) {
+    age--;
+  }
+  return age;
+}
+
 function formatDataForLLM(
   chart: ChartJSON,
   verdict: AnalystVerdictJSON,
@@ -43,19 +56,7 @@ function formatDataForLLM(
 
   // 大运信息（显示所有大运，并标注当前大运）
   text += "## 大运信息\n\n";
-  const currentYear = new Date().getFullYear();
-  let currentAge: number | null = null;
-  
-  if (birthDate) {
-    // 从出生日期计算当前年龄
-    const birth = new Date(birthDate);
-    currentAge = currentYear - birth.getFullYear();
-    const today = new Date();
-    if (today.getMonth() < birth.getMonth() || 
-        (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) {
-      currentAge--;
-    }
-  }
+  const currentAge = calcCurrentAge(birthDate);
   
   // 调试日志：输出接收到的大运数据
   if (process.env.NODE_ENV === "development" || true) {
@@ -67,12 +68,34 @@ function formatDataForLLM(
     console.log(`[Writer Agent] Current age:`, currentAge);
   }
   
+  let activeLuckNote = "";
+  let activeLuckIndex: number | null = null;
+  let activeLuckUpcoming = false;
+
+  const lucks = chart.luckPillars;
   chart.luckPillars.forEach((luck) => {
     const isCurrent = currentAge !== null && luck.startAge <= currentAge && luck.endAge >= currentAge;
     const label = isCurrent ? "（当前）" : "";
     text += `第${luck.index}步大运${label}（${luck.startAge}-${luck.endAge}岁）：${luck.pillar.heavenlyStem}${luck.pillar.earthlyBranch}\n`;
+    if (isCurrent) {
+      activeLuckIndex = luck.index;
+    }
   });
   text += "\n";
+
+  if (currentAge !== null && lucks.length > 0 && activeLuckIndex === null) {
+    // 尚未起运，取第一步大运作为参考
+    const first = lucks[0]!;
+    if (currentAge < first.startAge) {
+      activeLuckIndex = first.index;
+      activeLuckUpcoming = true;
+      activeLuckNote = `当前年龄 ${currentAge} 岁，尚未进入大运。以下关于「当前十年大运」的分析将预先参考即将到来的第${first.index}步大运（${first.startAge}-${first.endAge}岁，${first.pillar.heavenlyStem}${first.pillar.earthlyBranch}），请明确说明这是即将到来的第一步大运。`;
+    }
+  }
+
+  if (activeLuckNote) {
+    text += `## 大运起运提示\n\n${activeLuckNote}\n\n`;
+  }
 
   // 互动关系（简要）
   if (chart.interactionMatrix.entries.length > 0) {
