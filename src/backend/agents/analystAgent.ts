@@ -34,6 +34,16 @@ function formatChartForLLM(chart: ChartJSON, gender?: "male" | "female"): string
   text += "\n";
 
   text += "## 大运信息\n\n";
+  
+  // 调试日志：输出传递给 Analyst Agent 的大运数据
+  if (process.env.NODE_ENV === "development" || true) {
+    console.log(`[Analyst Agent] Received luck pillars:`, luckPillars.map(lp => ({
+      step: lp.index,
+      ageRange: `${lp.startAge}-${lp.endAge}`,
+      pillar: `${lp.pillar.heavenlyStem}${lp.pillar.earthlyBranch}`
+    })));
+  }
+  
   luckPillars.slice(0, 3).forEach((luck) => {
     text += `第${luck.index}步大运（${luck.startAge}-${luck.endAge}岁）：${luck.pillar.heavenlyStem}${luck.pillar.earthlyBranch}\n`;
   });

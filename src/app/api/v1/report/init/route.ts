@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     // 使用真实的 LLM 客户端（可以复用同一个实例，也可以创建新实例）
     const writerLLMClient = createLLMClient();
     const currentYear = new Date().getFullYear();
-    const report = await generateBasicReport(chart, verdict, writerLLMClient, currentYear, birthInput.gender);
+    const report = await generateBasicReport(chart, verdict, writerLLMClient, currentYear, birthInput.gender, birthInput.birthDate);
 
     // 返回成功响应
     return NextResponse.json(

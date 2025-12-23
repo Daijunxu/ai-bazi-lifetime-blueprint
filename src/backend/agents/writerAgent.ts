@@ -15,7 +15,8 @@ import type { LLMClient, LLMMessage } from "../llm/llmClient";
 function formatDataForLLM(
   chart: ChartJSON,
   verdict: AnalystVerdictJSON,
-  gender?: "male" | "female"
+  gender?: "male" | "female",
+  birthDate?: string
 ): string {
   let text = "## 命盘技术数据\n\n";
   
@@ -40,13 +41,38 @@ function formatDataForLLM(
   }
   text += `- **分析推理**：${verdict.verdictReasoning}\n\n`;
 
-  // 大运信息（仅显示当前大运）
-  const currentLuck = chart.luckPillars.find(
-    (luck) => luck.startAge <= 30 && luck.endAge >= 30
-  ) || chart.luckPillars[0];
-  if (currentLuck) {
-    text += `**当前大运**（${currentLuck.startAge}-${currentLuck.endAge}岁）：${currentLuck.pillar.heavenlyStem}${currentLuck.pillar.earthlyBranch}\n\n`;
+  // 大运信息（显示所有大运，并标注当前大运）
+  text += "## 大运信息\n\n";
+  const currentYear = new Date().getFullYear();
+  let currentAge: number | null = null;
+  
+  if (birthDate) {
+    // 从出生日期计算当前年龄
+    const birth = new Date(birthDate);
+    currentAge = currentYear - birth.getFullYear();
+    const today = new Date();
+    if (today.getMonth() < birth.getMonth() || 
+        (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) {
+      currentAge--;
+    }
   }
+  
+  // 调试日志：输出接收到的大运数据
+  if (process.env.NODE_ENV === "development" || true) {
+    console.log(`[Writer Agent] Received luck pillars:`, chart.luckPillars.map(lp => ({
+      step: lp.index,
+      ageRange: `${lp.startAge}-${lp.endAge}`,
+      pillar: `${lp.pillar.heavenlyStem}${lp.pillar.earthlyBranch}`
+    })));
+    console.log(`[Writer Agent] Current age:`, currentAge);
+  }
+  
+  chart.luckPillars.forEach((luck) => {
+    const isCurrent = currentAge !== null && luck.startAge <= currentAge && luck.endAge >= currentAge;
+    const label = isCurrent ? "（当前）" : "";
+    text += `第${luck.index}步大运${label}（${luck.startAge}-${luck.endAge}岁）：${luck.pillar.heavenlyStem}${luck.pillar.earthlyBranch}\n`;
+  });
+  text += "\n";
 
   // 互动关系（简要）
   if (chart.interactionMatrix.entries.length > 0) {
@@ -165,10 +191,11 @@ export async function generateBasicReport(
   verdict: AnalystVerdictJSON,
   llmClient: LLMClient,
   currentYear?: number,
-  gender?: "male" | "female"
+  gender?: "male" | "female",
+  birthDate?: string
 ): Promise<BasicReport> {
   const systemPrompt = loadBasicSystemPrompt();
-  const dataText = formatDataForLLM(chart, verdict, gender);
+  const dataText = formatDataForLLM(chart, verdict, gender, birthDate);
   const year = currentYear || new Date().getFullYear();
 
   const messages: LLMMessage[] = [

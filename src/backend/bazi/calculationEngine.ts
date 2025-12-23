@@ -18,6 +18,7 @@ import {
   getHourStem,
   hourToBranch,
   getHiddenStemsForBranch,
+  EARTHLY_BRANCHES,
 } from "./utils";
 import { calculateTenGod } from "./tenGod";
 import { calculateLuckPillars } from "./luckPillars";
@@ -45,30 +46,67 @@ export interface BirthInputWithLocation extends BirthInput {
 }
 
 /**
- * 根据农历月份获取月支（简化：基于公历月份近似）
- * 实际应基于节气，这里先用简化版本
+ * 根据日期获取月支（基于节气）
+ * 简化版本：使用固定的节气日期近似值
+ * 注意：这是简化算法，精确的节气计算需要天文算法
  */
-function getMonthBranch(month: number): EarthlyBranch {
-  // 简化：公历月份 - 1 对应月支（实际应基于节气）
-  const monthBranchMap: EarthlyBranch[] = [
-    "Yin", // 正月（立春后）
-    "Mao", // 二月
-    "Chen", // 三月
-    "Si", // 四月
-    "Wu", // 五月
-    "Wei", // 六月
-    "Shen", // 七月
-    "You", // 八月
-    "Xu", // 九月
-    "Hai", // 十月
-    "Zi", // 十一月
-    "Chou", // 十二月
-  ];
-  // 确保月份在有效范围内
-  const index = Math.max(0, Math.min(11, month - 1));
-  const branch = monthBranchMap[index];
+function getMonthBranch(date: Date): EarthlyBranch {
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1; // 1-12
+  const day = date.getDate();
+  
+  // 简化的节气日期表（基于公历，每年略有不同，这里使用近似值）
+  // 立春：约2月4-5日，惊蛰：约3月5-6日，清明：约4月4-5日
+  // 立夏：约5月5-6日，芒种：约6月5-6日，小暑：约7月7-8日
+  // 立秋：约8月7-8日，白露：约9月7-8日，寒露：约10月8-9日
+  // 立冬：约11月7-8日，大雪：约12月7-8日，小寒：约1月5-6日
+  
+  // 根据月份和日期判断节气
+  let monthBranchIndex: number;
+  
+  if (month === 1) {
+    // 1月：小寒（约1月5-6日）之后是丑月，之前是子月
+    monthBranchIndex = day >= 6 ? 1 : 0; // 丑月或子月
+  } else if (month === 2) {
+    // 2月：立春（约2月4-5日）之后是寅月，之前是丑月
+    monthBranchIndex = day >= 5 ? 2 : 1; // 寅月或丑月
+  } else if (month === 3) {
+    // 3月：惊蛰（约3月5-6日）之后是卯月，之前是寅月
+    monthBranchIndex = day >= 6 ? 3 : 2; // 卯月或寅月
+  } else if (month === 4) {
+    // 4月：清明（约4月4-5日）之后是辰月，之前是卯月
+    monthBranchIndex = day >= 5 ? 4 : 3; // 辰月或卯月
+  } else if (month === 5) {
+    // 5月：立夏（约5月5-6日）之后是巳月，之前是辰月
+    monthBranchIndex = day >= 6 ? 5 : 4; // 巳月或辰月
+  } else if (month === 6) {
+    // 6月：芒种（约6月5-6日）之后是午月，之前是巳月
+    monthBranchIndex = day >= 6 ? 6 : 5; // 午月或巳月
+  } else if (month === 7) {
+    // 7月：小暑（约7月7-8日）之后是未月，之前是午月
+    monthBranchIndex = day >= 8 ? 7 : 6; // 未月或午月
+  } else if (month === 8) {
+    // 8月：立秋（约8月7-8日）之后是申月，之前是未月
+    monthBranchIndex = day >= 8 ? 8 : 7; // 申月或未月
+  } else if (month === 9) {
+    // 9月：白露（约9月7-8日）之后是酉月，之前是申月
+    monthBranchIndex = day >= 8 ? 9 : 8; // 酉月或申月
+  } else if (month === 10) {
+    // 10月：寒露（约10月8-9日）之后是戌月，之前是酉月
+    monthBranchIndex = day >= 9 ? 10 : 9; // 戌月或酉月
+  } else if (month === 11) {
+    // 11月：立冬（约11月7-8日）之后是亥月，之前是戌月
+    monthBranchIndex = day >= 8 ? 11 : 10; // 亥月或戌月
+  } else if (month === 12) {
+    // 12月：大雪（约12月7-8日）之后是子月，之前是亥月
+    monthBranchIndex = day >= 8 ? 0 : 11; // 子月或亥月
+  } else {
+    throw new Error(`Invalid month: ${month}`);
+  }
+  
+  const branch = EARTHLY_BRANCHES[monthBranchIndex];
   if (!branch) {
-    throw new Error(`Invalid month branch index: ${index}`);
+    throw new Error(`Invalid month branch index: ${monthBranchIndex}`);
   }
   return branch;
 }
@@ -93,8 +131,8 @@ function buildFourPillars(
     strength: h.strength,
   }));
 
-  // 月柱
-  const monthBranch = getMonthBranch(month);
+  // 月柱（基于节气）
+  const monthBranch = getMonthBranch(solarDate);
   const monthStem = getMonthStem(monthBranch, yearStem);
   const monthHiddenStems = getHiddenStemsForBranch(monthBranch).map((h) => ({
     stem: h.stem,
@@ -193,6 +231,11 @@ export async function calculateChart(
       minute = inputDate.getMinutes();
     }
 
+    // 调试：输出传递给库的参数
+    if (process.env.NODE_ENV === "development") {
+      console.log("[Bazi Calculation] 传递给库的参数:", { year, month, day, hour, minute });
+    }
+
     fourPillars = await calculateFourPillarsWithLibrary(
       year,
       month,
@@ -200,6 +243,16 @@ export async function calculateChart(
       hour,
       minute
     );
+
+    // 调试：输出计算后的四柱
+    if (process.env.NODE_ENV === "development") {
+      console.log("[Bazi Calculation] 计算后的四柱:", {
+        year: `${fourPillars.year.heavenlyStem}${fourPillars.year.earthlyBranch}`,
+        month: `${fourPillars.month.heavenlyStem}${fourPillars.month.earthlyBranch}`,
+        day: `${fourPillars.day.heavenlyStem}${fourPillars.day.earthlyBranch}`,
+        hour: `${fourPillars.hour.heavenlyStem}${fourPillars.hour.earthlyBranch}`,
+      });
+    }
     dayMaster = fourPillars.day.heavenlyStem;
   } catch (error) {
     // 如果库加载失败，回退到简化算法
@@ -250,13 +303,63 @@ export async function calculateChart(
   }
 
   // 计算大运
+  // 需要从输入中提取出生日期（使用本地时间，避免时区问题）
+  let birthDateForLuck: Date;
+  if (input.solarTime.applied) {
+    // 使用真太阳时（本地时间字符串）
+    const solarTimeString = input.solarTime.solarTimeIso;
+    const match = solarTimeString.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/);
+    if (match && match[1] && match[2] && match[3]) {
+      // 使用本地时间创建Date对象，避免时区转换
+      birthDateForLuck = new Date(
+        parseInt(match[1], 10),
+        parseInt(match[2], 10) - 1,
+        parseInt(match[3], 10),
+        0, 0, 0, 0
+      );
+    } else {
+      // 如果格式不匹配，解析原始输入
+      const inputDate = new Date(input.birthDate);
+      birthDateForLuck = new Date(
+        inputDate.getFullYear(),
+        inputDate.getMonth(),
+        inputDate.getDate(),
+        0, 0, 0, 0
+      );
+    }
+  } else {
+    // 未应用真太阳时，使用原始输入时间
+    const inputDate = new Date(input.birthDate);
+    birthDateForLuck = new Date(
+      inputDate.getFullYear(),
+      inputDate.getMonth(),
+      inputDate.getDate(),
+      0, 0, 0, 0
+    );
+  }
+  
+  // 调试日志
+  if (process.env.NODE_ENV === "development" || true) {
+    console.log(`[Bazi Calculation] birthDateForLuck: ${birthDateForLuck.toISOString()}, input.birthDate: ${input.birthDate}`);
+  }
+  
   const luckPillars = calculateLuckPillars(
     fourPillars.year.heavenlyStem,
     fourPillars.month.heavenlyStem,
     fourPillars.month.earthlyBranch,
     input.gender,
-    dayMaster
+    dayMaster,
+    birthDateForLuck
   );
+  
+  // 调试日志：输出计算后的大运
+  if (process.env.NODE_ENV === "development" || true) {
+    console.log(`[Bazi Calculation] Calculated luck pillars:`, luckPillars.map(lp => ({
+      step: lp.index,
+      ageRange: `${lp.startAge}-${lp.endAge}`,
+      pillar: `${lp.pillar.heavenlyStem}${lp.pillar.earthlyBranch}`
+    })));
+  }
 
   // 计算互动矩阵
   const interactionMatrix = calculateInteractionMatrix(fourPillars);
