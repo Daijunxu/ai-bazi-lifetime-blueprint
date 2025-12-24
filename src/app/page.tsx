@@ -5,7 +5,7 @@
  * 用户输入出生信息，生成八字报告
  */
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BirthForm, type BirthFormData } from "@/components/forms/BirthForm";
 import { ProfileHistory } from "@/components/ProfileHistory";
@@ -79,6 +79,8 @@ function HomePageContent() {
           birthCity: formData.birthCity,
           birthCityId: formData.birthCityId,
         });
+        // 更新 editProfile 状态，使表单显示更新后的信息
+        setEditProfile(profile);
       } else {
         // 创建新 profile
         profile = saveProfile({
@@ -98,6 +100,13 @@ function HomePageContent() {
           result.data.verdict,
           result.data.report
         );
+        // 如果是在编辑模式，重新获取更新后的 profile（包含报告数据）
+        if (isEditMode) {
+          const updatedProfile = getProfileById(profile.id);
+          if (updatedProfile) {
+            setEditProfile(updatedProfile);
+          }
+        }
       }
 
       // 跳转到报告页面（使用 profile ID 作为查询参数）
@@ -257,28 +266,32 @@ function HomePageContent() {
           <BirthForm
             onSubmit={handleSubmit}
             isLoading={isLoading}
-            initialData={
-              isEditMode && editProfile
-                ? {
-                    name: editProfile.name || "",
-                    gender: editProfile.gender,
-                    birthDate: editProfile.birthDate.split("T")[0], // 提取日期部分 YYYY-MM-DD
-                    birthTime: (() => {
-                      // 从 ISO 字符串中提取时间部分 HH:mm
-                      const timePart = editProfile.birthDate.split("T")[1];
-                      if (timePart) {
-                        return timePart.substring(0, 5); // 提取 HH:mm
-                      }
+            initialData={useMemo(() => {
+              if (isEditMode && editProfile) {
+                const timePart = editProfile.birthDate.split("T")[1];
+                const birthTime = timePart
+                  ? timePart.substring(0, 5) // 提取 HH:mm
+                  : (() => {
                       // 如果格式不对，尝试从 Date 对象转换
                       const date = new Date(editProfile.birthDate);
                       const hours = String(date.getUTCHours()).padStart(2, "0");
                       const minutes = String(date.getUTCMinutes()).padStart(2, "0");
                       return `${hours}:${minutes}`;
-                    })(),
-                    birthCity: editProfile.birthCity || "",
-                  }
-                : undefined
-            }
+                    })();
+                
+                const data = {
+                  name: editProfile.name || "",
+                  gender: editProfile.gender,
+                  birthDate: editProfile.birthDate.split("T")[0], // 提取日期部分 YYYY-MM-DD
+                  birthTime,
+                  birthCity: editProfile.birthCity || "",
+                  birthCityId: editProfile.birthCityId,
+                };
+                
+                return data;
+              }
+              return undefined;
+            }, [isEditMode, editProfile])}
           />
         </div>
 

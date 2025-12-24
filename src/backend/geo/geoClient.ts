@@ -55,8 +55,8 @@ interface CityData {
 }
 
 /**
- * 生成层级显示名称，例如 "Hefei, Anhui, China"
- * 对于中国的直辖市，不显示省份信息
+ * 生成层级显示名称，例如 "Hefei, China"
+ * 统一格式：不显示省份/州信息
  */
 function formatCityDisplayName(
   cityName: string,
@@ -86,36 +86,10 @@ function formatCityDisplayName(
     TW: "Taiwan",
   };
 
-  // 中国的直辖市列表（不显示省份）
-  const chineseMunicipalities = [
-    "北京", "北京市", "Beijing", "beijing",
-    "上海", "上海市", "Shanghai", "shanghai",
-    "天津", "天津市", "Tianjin", "tianjin",
-    "重庆", "重庆市", "Chongqing", "chongqing",
-  ];
-
   const parts: string[] = [cityName];
   
-  // 如果是中国的直辖市，不显示省份
-  // 检查城市名是否匹配直辖市（不区分大小写）
-  const cityNameLower = cityName.toLowerCase();
-  const isChineseMunicipality = chineseMunicipalities.some(
-    (municipality) => {
-      const municipalityLower = municipality.toLowerCase();
-      return cityNameLower === municipalityLower || 
-             cityNameLower.includes(municipalityLower) ||
-             municipalityLower.includes(cityNameLower);
-    }
-  );
-  
-  // 如果 provinceName 存在且不是数字，且不是中国的直辖市，则添加省份
-  if (provinceName && !isChineseMunicipality) {
-    // 检查 provinceName 是否为数字（可能是行政区划代码）
-    const isNumeric = /^\d+$/.test(provinceName.trim());
-    if (!isNumeric) {
-      parts.push(provinceName);
-    }
-  }
+  // 统一格式：不显示省份/州信息，只显示城市名和国家
+  // provinceName 参数保留用于内部逻辑，但不显示在最终结果中
   
   if (countryCode) {
     const countryName = countryNames[countryCode] || countryCode;
@@ -134,13 +108,13 @@ export class InMemoryGeoClient implements GeoClient {
   constructor() {
     // 全球主要城市数据（按地区分组）
     this.cities = {
-      // 中国主要城市
+      // 中国主要城市（统一使用拼音）
       beijing: {
         suggestion: {
           id: "beijing",
-          name: "北京市",
+          name: "Beijing",
           countryCode: "CN",
-          provinceName: "北京"
+          provinceName: "Beijing"
         },
         coordinates: { latitude: 39.9042, longitude: 116.4074 },
         timezone: "Asia/Shanghai",
@@ -149,9 +123,9 @@ export class InMemoryGeoClient implements GeoClient {
       shanghai: {
         suggestion: {
           id: "shanghai",
-          name: "上海市",
+          name: "Shanghai",
           countryCode: "CN",
-          provinceName: "上海"
+          provinceName: "Shanghai"
         },
         coordinates: { latitude: 31.2304, longitude: 121.4737 },
         timezone: "Asia/Shanghai",
@@ -160,9 +134,9 @@ export class InMemoryGeoClient implements GeoClient {
       guangzhou: {
         suggestion: {
           id: "guangzhou",
-          name: "广州市",
+          name: "Guangzhou",
           countryCode: "CN",
-          provinceName: "广东"
+          provinceName: "Guangdong"
         },
         coordinates: { latitude: 23.1291, longitude: 113.2644 },
         timezone: "Asia/Shanghai",
@@ -171,9 +145,9 @@ export class InMemoryGeoClient implements GeoClient {
       shenzhen: {
         suggestion: {
           id: "shenzhen",
-          name: "深圳市",
+          name: "Shenzhen",
           countryCode: "CN",
-          provinceName: "广东"
+          provinceName: "Guangdong"
         },
         coordinates: { latitude: 22.5431, longitude: 114.0579 },
         timezone: "Asia/Shanghai",
@@ -186,7 +160,6 @@ export class InMemoryGeoClient implements GeoClient {
           countryCode: "CN",
           provinceName: "Guangdong"
         },
-        // 湛江大致经纬度：21.2707°N, 110.3589°E
         coordinates: { latitude: 21.2707, longitude: 110.3589 },
         timezone: "Asia/Shanghai",
         isApproximate: false
@@ -464,13 +437,13 @@ export class InMemoryGeoClient implements GeoClient {
 
     // 1. 先检查内置的主要城市数据库
     const cityNameMap: Record<string, string> = {
-      // 中国城市
-      "北京": "beijing", "北京市": "beijing", "beijing": "beijing", "peking": "beijing",
-      "上海": "shanghai", "上海市": "shanghai", "shanghai": "shanghai",
-      "广州": "guangzhou", "广州市": "guangzhou", "guangzhou": "guangzhou", "canton": "guangzhou",
-      "深圳": "shenzhen", "深圳市": "shenzhen", "shenzhen": "shenzhen",
-      "湛江": "zhanjiang", "湛江市": "zhanjiang", "zhanjiang": "zhanjiang",
-      "合肥": "hefei", "hefei": "hefei",
+      // 中国城市（支持中文、拼音小写、拼音首字母大写）
+      "北京": "beijing", "北京市": "beijing", "beijing": "beijing", "Beijing": "beijing", "peking": "beijing",
+      "上海": "shanghai", "上海市": "shanghai", "shanghai": "shanghai", "Shanghai": "shanghai",
+      "广州": "guangzhou", "广州市": "guangzhou", "guangzhou": "guangzhou", "Guangzhou": "guangzhou", "canton": "guangzhou",
+      "深圳": "shenzhen", "深圳市": "shenzhen", "shenzhen": "shenzhen", "Shenzhen": "shenzhen",
+      "湛江": "zhanjiang", "湛江市": "zhanjiang", "zhanjiang": "zhanjiang", "Zhanjiang": "zhanjiang",
+      "合肥": "hefei", "hefei": "hefei", "Hefei": "hefei",
       "香港": "hongkong", "hongkong": "hongkong", "hong kong": "hongkong",
       "台北": "taipei", "台北市": "taipei", "taipei": "taipei", "taipei city": "taipei",
       // 美国城市
@@ -582,7 +555,14 @@ export class InMemoryGeoClient implements GeoClient {
       });
 
       if (exactMatches.length > 0) {
-        return exactMatches.slice(0, 10).map((city, idx) => {
+        // 去重：基于城市名和国家代码
+        const uniqueMatches = Array.from(
+          new Map(
+            exactMatches.map(city => [`${city.name.toLowerCase()}-${city.country}`, city])
+          ).values()
+        );
+        
+        return uniqueMatches.slice(0, 10).map((city, idx) => {
           const displayName = formatCityDisplayName(
             city.name,
             city.admin1, // 使用 admin1 作为省份/州
@@ -605,11 +585,17 @@ export class InMemoryGeoClient implements GeoClient {
           return searchTerms.some(term => 
             cityNameLower.includes(term) || term.includes(cityNameLower)
           );
-        })
-        .slice(0, 20); // 限制返回数量
+        });
 
       if (fuzzyMatches.length > 0) {
-        return fuzzyMatches.map((city, idx) => {
+        // 去重：基于城市名和国家代码
+        const uniqueMatches = Array.from(
+          new Map(
+            fuzzyMatches.map(city => [`${city.name.toLowerCase()}-${city.country}`, city])
+          ).values()
+        );
+        
+        return uniqueMatches.slice(0, 20).map((city, idx) => {
           const displayName = formatCityDisplayName(
             city.name,
             city.admin1, // 使用 admin1 作为省份/州

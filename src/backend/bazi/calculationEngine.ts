@@ -46,6 +46,18 @@ export interface BirthInputWithLocation extends BirthInput {
 }
 
 /**
+ * 判断日期是否在立春之前
+ * 立春通常在2月4-5日，这里使用简化判断：2月5日之前认为是立春之前
+ */
+function isBeforeLiChun(date: Date): boolean {
+  const month = date.getMonth() + 1; // 1-12
+  const day = date.getDate();
+  
+  // 如果月份小于2，或者月份是2但日期小于5，则认为在立春之前
+  return month < 2 || (month === 2 && day < 5);
+}
+
+/**
  * 根据日期获取月支（基于节气）
  * 简化版本：使用固定的节气日期近似值
  * 注意：这是简化算法，精确的节气计算需要天文算法
@@ -108,6 +120,7 @@ function getMonthBranch(date: Date): EarthlyBranch {
   if (!branch) {
     throw new Error(`Invalid month branch index: ${monthBranchIndex}`);
   }
+  
   return branch;
 }
 
@@ -122,9 +135,13 @@ function buildFourPillars(
   const month = solarDate.getMonth() + 1;
   const hour = solarDate.getHours();
 
-  // 年柱
-  const yearStem = getYearStem(year);
-  const yearBranch = getYearBranch(year);
+  // 年柱：需要判断是否在立春之前
+  // 如果日期在立春之前，应该使用上一年的年柱
+  const isBeforeSpring = isBeforeLiChun(solarDate);
+  const yearForPillar = isBeforeSpring ? year - 1 : year;
+  
+  const yearStem = getYearStem(yearForPillar);
+  const yearBranch = getYearBranch(yearForPillar);
   const yearHiddenStems = getHiddenStemsForBranch(yearBranch).map((h) => ({
     stem: h.stem,
     tenGod: calculateTenGod(dayMaster, h.stem),
@@ -133,6 +150,8 @@ function buildFourPillars(
 
   // 月柱（基于节气）
   const monthBranch = getMonthBranch(solarDate);
+  
+  // 月柱计算：使用调整后的年干（基于立春判断）
   const monthStem = getMonthStem(monthBranch, yearStem);
   const monthHiddenStems = getHiddenStemsForBranch(monthBranch).map((h) => ({
     stem: h.stem,
@@ -231,6 +250,12 @@ export async function calculateChart(
       minute = inputDate.getMinutes();
     }
 
+    // 检查是否在立春之前，如果是，需要调整年份
+    // 创建临时 Date 对象用于判断
+    const tempDateForCheck = new Date(year, month - 1, day, hour, minute);
+    const isBeforeSpring = isBeforeLiChun(tempDateForCheck);
+    const yearForLibrary = isBeforeSpring ? year - 1 : year;
+    
     // 调试：输出传递给库的参数
     if (process.env.NODE_ENV === "development") {
       console.log("[Bazi Calculation] 传递给库的参数:", { year, month, day, hour, minute });
@@ -243,6 +268,27 @@ export async function calculateChart(
       hour,
       minute
     );
+    
+    // 如果库返回的结果在立春前是错误的，我们需要修正
+    if (isBeforeSpring) {
+      const correctYearStem = getYearStem(yearForLibrary);
+      const correctYearBranch = getYearBranch(yearForLibrary);
+      const correctMonthStem = getMonthStem(fourPillars.month.earthlyBranch, correctYearStem);
+      
+      // 修正年柱和月柱
+      fourPillars = {
+        ...fourPillars,
+        year: {
+          ...fourPillars.year,
+          heavenlyStem: correctYearStem,
+          earthlyBranch: correctYearBranch,
+        },
+        month: {
+          ...fourPillars.month,
+          heavenlyStem: correctMonthStem,
+        },
+      };
+    }
 
     // 使用我们自己的真太阳时与时柱规则重算时柱，避免第三方库在时柱上的差异
     // 只在成功拿到四柱且有真太阳时时才覆盖库返回的时柱
@@ -358,13 +404,15 @@ export async function calculateChart(
     // 使用真太阳时（本地时间字符串）
     const solarTimeString = input.solarTime.solarTimeIso;
     const match = solarTimeString.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/);
-    if (match && match[1] && match[2] && match[3]) {
-      // 使用本地时间创建Date对象，避免时区转换
+    if (match && match[1] && match[2] && match[3] && match[4] && match[5]) {
+      // 使用真太阳时的完整时间（包括时分），而不是只使用日期
       birthDateForLuck = new Date(
         parseInt(match[1], 10),
         parseInt(match[2], 10) - 1,
         parseInt(match[3], 10),
-        0, 0, 0, 0
+        parseInt(match[4], 10),
+        parseInt(match[5], 10),
+        0
       );
     } else {
       // 如果格式不匹配，解析原始输入
@@ -373,7 +421,9 @@ export async function calculateChart(
         inputDate.getFullYear(),
         inputDate.getMonth(),
         inputDate.getDate(),
-        0, 0, 0, 0
+        inputDate.getHours(),
+        inputDate.getMinutes(),
+        0
       );
     }
   } else {
@@ -383,7 +433,9 @@ export async function calculateChart(
       inputDate.getFullYear(),
       inputDate.getMonth(),
       inputDate.getDate(),
-      0, 0, 0, 0
+      inputDate.getHours(),
+      inputDate.getMinutes(),
+      0
     );
   }
   

@@ -64,30 +64,48 @@ function getNextSolarTerm(birthDate: Date, reverse: boolean): Date {
   
   if (reverse) {
     // 逆排：找上一个节气
+    // 对于1月的日期，先检查是否在小寒之后
+    if (month === 1) {
+      const currentYearXiaohan = new Date(year, 0, 6); // 当年（同一年）的小寒
+      if (birthDate >= currentYearXiaohan) {
+        return currentYearXiaohan;
+      }
+      // 如果在小寒之前，用上一年的小寒
+      const prevYearXiaohan = new Date(year - 1, 0, 6);
+      return prevYearXiaohan;
+    }
+    
+    // 对于非1月的日期，先找今年的节气（从后往前，跳过小寒因为它是下一年的）
     for (let i = solarTerms.length - 1; i >= 0; i--) {
       const term = solarTerms[i]!;
-      let termYear = year;
+      // 跳过小寒（1月），因为它是下一年的
       if (term.month === 1) {
-        termYear = year - 1; // 小寒是上一年的
+        continue;
       }
-      const termDate = new Date(termYear, term.month - 1, term.day);
+      const termDate = new Date(year, term.month - 1, term.day);
       if (termDate <= birthDate) {
         return termDate;
       }
     }
-    // 如果没找到，返回上一年的小寒
-    return new Date(year - 1, 0, 6);
+    // 如果今年的节气都过了，找上一年的小寒
+    const prevYearXiaohan = new Date(year - 1, 0, 6);
+    return prevYearXiaohan;
   } else {
     // 顺排：找下一个节气
     // 先找今年的节气
     for (const term of solarTerms) {
+      // 跳过小寒（1月），因为它是下一年的
+      if (term.month === 1) {
+        continue;
+      }
       const termDate = new Date(year, term.month - 1, term.day);
       if (termDate > birthDate) {
         return termDate;
       }
     }
     // 如果今年的节气都过了，找下一年的第一个节气（立春）
-    return new Date(year + 1, 1, 4);
+    const nextYearLichun = new Date(year + 1, 1, 4);
+    return nextYearLichun;
   }
 }
 
@@ -103,14 +121,14 @@ function calculateStartAge(
   // 找到下一个（或上一个）节气
   const solarTermDate = getNextSolarTerm(birthDate, reverse);
   
-  // 计算天数差
-  const daysDiff = Math.abs(
-    Math.floor((solarTermDate.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24))
-  );
+  // 计算天数差（不使用绝对值，保留正负号以判断方向）
+  const timeDiff = solarTermDate.getTime() - birthDate.getTime();
+  const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
   
   // 每3天=1岁，每30天=10岁（一步大运）
   // 第一步大运的起始年龄 = 天数差 / 3（转换为岁）
-  const firstStepStartAge = Math.floor(daysDiff / 3);
+  // 使用绝对值，因为天数差可能是负数（逆排时）
+  const firstStepStartAge = Math.floor(Math.abs(daysDiff) / 3);
   
   // 每步大运10年
   const stepStartAge = firstStepStartAge + (step - 1) * 10;
@@ -184,6 +202,7 @@ export function calculateLuckPillars(
   birthDate: Date
 ): LuckPillar[] {
   const reverse = shouldReverseLuck(yearStem, gender);
+  
   const totalSteps = 8; // 默认 8 步大运
 
   const luckPillars: LuckPillar[] = [];
